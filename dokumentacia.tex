@@ -1,0 +1,94 @@
+\documentclass{FEIstyle}
+
+% Zalamovanie: radšej voľnejšie medzery než text za okrajom
+\emergencystretch=3em
+\hyphenation{gover-nance de-ve-lop-ment}
+
+% Zoznam literatúry
+\addbibresource{includes/literatura.bib}
+
+% Typ práce na titulnej strane a vypnutie evidenčného čísla
+\def\typPrace{Projektová dokumentácia}
+\setboolean{isThesis}{false}
+
+% Autori (do metadát PDF)
+\FEIauthor{Ivan Yachmenov, Viacheslav Kolesnikov, Hlib Dorosh, Ihor Shpetun, Dmytro Loiko}
+
+% Názov
+\FEItitle{Inteligentný systém pre automatizované hodnotenie bezpečnosti a~governance AI systémov}
+\FEItitleEn{Intelligent System for Automated Security and Governance Assessment of AI Systems}
+
+\FEIsupervisor{Lukáš Šurab}
+
+% Kľúčové slová (len do metadát PDF)
+\FEIkeywords{AI governance, bezpečnosť AI, model card, LLM, RAG, threat modeling}
+
+% Vloží obrázok img/<#1>.png; ak ešte neexistuje, zobrazí rámček
+\newcommand{\obrazok}[1]{%
+    \IfFileExists{img/#1.png}{\includegraphics[width=\textwidth]{img/#1.png}}{%
+    \fbox{\parbox[c][6cm][c]{0.9\textwidth}{\centering Chýba súbor \texttt{img/\detokenize{#1}.png}}}}}
+
+% Zástupný text pre kapitoly, ktoré ešte nie sú spracované
+\newcommand{\nedoplnene}{\emph{Kapitola bude doplnená v~priebehu riešenia projektu.}}
+
+% Titulná strana tímového projektu (rovnaké písmo a veľkosti ako \FEIcover,
+% namiesto jedného autora zoznam členov tímu)
+\makeatletter
+\newcommand\TPcover{%
+    \pagestyle{empty}
+    \newgeometry{tmargin=2cm,bmargin=1.8cm,lmargin=2.75cm,rmargin=2.75cm}
+    \begin{sffamily}
+    \begin{center}
+        {\fontsize{14.5pt}{0}\selectfont\bfseries \MakeTextUppercase{\printSkola}\\[11.3pt] \printFakulta}
+    \end{center}
+    \vspace{40mm}
+    \begin{center}
+        {\fontsize{20.5pt}{24pt}\selectfont\bfseries\printNazov\par}\vspace{29pt}
+        {\fontsize{14.5pt}{0}\selectfont\bfseries Tímový projekt (TP1)}\\[14pt]
+        {\fontsize{14.5pt}{0}\selectfont\bfseries \typPrace}
+    \end{center}
+    \vspace{\fill}
+    {\fontsize{12pt}{16pt}\selectfont
+    \begin{tabular}{@{}ll@{}}
+        \textbf{Tím:}      & Ivan Yachmenov (I-API-AI) \\
+                           & Viacheslav Kolesnikov (I-API-ISS) \\
+                           & Hlib Dorosh (I-API-ISS) \\
+                           & Ihor Shpetun (I-API-AI) \\
+                           & Dmytro Loiko (I-API-ISS) \\[6pt]
+        \textbf{Vedúci projektu:} & \printVeduciZaverecnejPrace \\[6pt]
+        \textbf{Spolupráca:} & Alison Slovakia s.r.o. \\
+    \end{tabular}\par}
+    \vspace{18mm}
+    \begin{flushleft}
+        {\fontsize{14.5pt}{0}\selectfont\bfseries
+            Bratislava
+            \hfill
+            akademický rok 2026/2027}
+    \end{flushleft}
+    \end{sffamily}
+    \restoregeometry
+    \newpage
+}
+\makeatother
+
+\begin{document}
+
+\FEIpdfInfo
+\TPcover
+
+\pagestyle{plain}
+\setcounter{page}{1}
+
+\FEIcontent
+\FEImanualListOfGlossaries{includes/skratky}
+
+\FEIintroduction{kapitoly/uvod}
+
+\FEIcore{kapitoly/jadro}
+
+\FEIconclusion{kapitoly/zaver}
+
+\nocite{*}
+\FEIbibliography
+
+\end{document}

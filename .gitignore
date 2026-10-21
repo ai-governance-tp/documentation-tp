@@ -1,0 +1,15 @@
+# Pomocné súbory LaTeXu (výsledné dokumentacia.pdf sa NEignoruje)
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.lof
+*.lot
+*.pri

@@ -1,0 +1,35 @@
+\section{Ciele riešenia}
+\label{sec:ciele}
+
+\subsection{Hlavný cieľ}
+
+Hlavným cieľom projektu je vytvoriť prototyp adaptívneho systému, ktorý
+z~dostupných podkladov o~AI modeli alebo AI systéme automatizovane vytvorí
+jeho bezpečnostný a~governance profil, identifikuje riziká, nedostatky
+a~chýbajúce informácie a~každé zistenie prepojí s~dôkazom, z~ktorého vzniklo.
+
+\subsection{Čiastkové ciele}
+
+Čiastkové ciele zodpovedajú piatim úlohám oficiálneho zadania
+(kapitola~\ref{sec:zadanie}):
+
+\begin{enumerate}
+    \item \textbf{Jednotný informačný model.} Navrhnúť štruktúru, ktorá
+    jednotne opisuje AI riešenie v~oblastiach model card, účel a~obmedzenia
+    použitia, informácie o~dátach, evaluačné výsledky, bezpečnostné
+    vlastnosti a~ďalšie relevantné charakteristiky.
+    \item \textbf{Zber a~extrakcia informácií.} Implementovať automatizované
+    získavanie informácií z~model cards, technickej dokumentácie a~ďalších
+    zdrojov, ich extrakciu do informačného modelu a~vzájomné prepojenie.
+    \item \textbf{Hodnotiace mechanizmy.} Implementovať vybrané automatizované
+    hodnotenia: tvorbu alebo dopĺňanie model card, threat modeling,
+    identifikáciu bezpečnostných rizík a~kontrolu splnenia definovaných
+    požiadaviek.
+    \item \textbf{Adaptívne hodnotenie.} Umožniť systému rozpoznať chýbajúce
+    informácie, generovať doplňujúce otázky a~ku každému zisteniu uvádzať
+    mieru istoty.
+    \item \textbf{Vyhodnotenie systému.} Overiť systém na vybraných AI modeloch
+    alebo systémoch z~hľadiska správnosti a~úplnosti získaných informácií,
+    kvality hodnotení, identifikovaných rizík a~dohľadateľnosti zistení
+    k~zdrojovým dôkazom.
+\end{enumerate}
