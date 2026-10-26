@@ -1,0 +1,157 @@
+\section{Návrh a~architektúra systému}
+\label{sec:architektura}
+
+\emph{Kapitola obsahuje prvý návrh architektúry. Jednotlivé časti budú
+spresnené podľa výsledkov experimentov.}
+
+Jadrom systému je \textbf{orchestrátor}, komponent, ktorý na plánovanie
+využíva hlavný jazykový model. Audit AI modelu rozloží na menšie podúlohy
+a~prideľuje ich \textbf{agentom}; agenti na svoje úlohy využívajú menšie
+jazykové modely s~malým kontextom. \emph{Statickí} agenti sú potrební pri
+každom audite a~bežia stále, \emph{dynamickí} sa spúšťajú a~zastavujú
+podľa potreby. Systém nie je viazaný na konkrétne prostredie: beží na
+ľubovoľnom počítači s~GPU a~kontajnerovým runtime, napríklad na serveri
+školy alebo firmy.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% diagram komponentov na samostatnej otočenej strane (po aktuálnej strane, aby bol prvý)
+\afterpage{\begin{landscape}
+\begin{figure}[p]
+\centering
+\includestandalone[width=\linewidth,height=0.9\textheight,keepaspectratio]{uml/komponenty}
+\caption{UML diagram komponentov systému (šípky znázorňujú tok dát)}
+\label{fig:komponenty}
+\end{figure}
+\end{landscape}}
+
+\subsection{Princípy návrhu}
+\label{sec:principy}
+
+\begin{itemize}
+    \item \textbf{Všetko lokálne.} Systém nepoužíva žiadne externé API.
+    Jazykové modely sú stiahnuté na hostiteľskom počítači a~bežia
+    v~\texttt{llama-server} z~projektu llama.cpp~\cite{llamacpp}. Testovaný
+    model sa nahrá ako súbory.
+    \item \textbf{Internet iba výnimočne.} Prístup von je vypnutý; ak je
+    potrebný, ide cez proxy na niekoľko overených stránok (whitelist).
+    \item \textbf{Žiadne zistenie bez dôkazu.} Každé tvrdenie v~profile
+    odkazuje na konkrétny úryvok zdroja, inak sa údaj označí ako chýbajúci.
+    \item \textbf{Malé úlohy namiesto jednej veľkej.} Agent rieši úzku
+    podúlohu s~malým kontextom, čo znižuje riziko halucinácií.
+    \item \textbf{Kontrola kritikom.} Každé tvrdenie, ktoré vytvorí
+    jazykový model, overí kritik (vzor actor-critic
+    a~self-refine~\cite{madaan2023selfrefine}).
+\end{itemize}
+
+\paragraph{Skill.} Skill je opis jednej schopnosti agenta, ktorý tvoria
+tri časti: inštrukcia pre jazykový model (prompt), zoznam povolených
+nástrojov a~JSON schéma výstupu. Skilly sú uložené v~registri skillov;
+orchestrátor ku každej podúlohe vyberie vhodný skill a~odovzdá ho agentovi
+spolu s~podúlohou. V~experimentálnom variante môže generátor skillov
+vytvoriť nový skill, ak žiadny z~existujúcich nevyhovuje; systém sa
+porovná s~touto možnosťou aj bez nej.
+
+\paragraph{Prečo kontajnery.} Samostatný kontajner je nutný najmä pre
+analytika artefaktov, ktorý číta súbory testovaného modelu: súbory vo
+formáte pickle môžu pri načítaní spustiť ľubovoľný kód~\cite{hf-pickle},
+preto sa spracúvajú izolovane a~bez prístupu na internet (komunikuje iba
+s~databázou vo vnútornej sieti kontajnerov). Zberač ako jediný potrebuje
+internet, preto beží oddelene za proxy. Agenti, ktorí iba volajú
+jazykový model, sú v~kontajneroch kvôli jednotnému nasadeniu a~nezávislému
+spúšťaniu; ak sa to ukáže ako zbytočná réžia, môžu bežať ako procesy
+v~kontajneri orchestrátora.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Komponenty systému}
+\label{sec:komponenty}
+
+Obrázok~\ref{fig:komponenty} zachytáva štruktúru systému ako UML diagram
+komponentov. Plné šípky s~popisom nie sú závislosti v~zmysle UML, ale
+ukazujú \emph{tok dát} medzi komponentmi. Značka \textsf{AI} označuje
+komponenty, ktoré volajú jazykový model. Úložisko dôkazov je databáza,
+testované modely a~katalóg kritérií sú dáta (artefakty). Audit sa zatiaľ
+spúšťa z~príkazového riadka (CLI). Prerušovanou čiarou je vyznačená
+experimentálna časť s~generátorom skillov.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Orchestrátor a~agenti}
+\label{sec:agenti}
+
+Obrázok~\ref{fig:agenti} je prehľadový diagram (nie UML), ktorý pre
+orchestrátor a~každého agenta uvádza vstup, úlohu jazykového modelu
+a~výstup s~jeho cieľom. Výstupy agentov s~jazykovým modelom idú ku
+kritikovi. Výstupy bez jazykového modelu, teda nálezy deterministických
+kontrol analytika artefaktov a~dokumenty stiahnuté zberačom, sa ukladajú
+priamo do úložiska; otázky tvorcu otázok idú cez orchestrátor
+používateľovi.
+
+\begin{figure}[ht]
+\centering
+\includestandalone[width=\textwidth]{uml/agenti}
+\caption{Prehľadový diagram orchestrátora a~agentov}
+\label{fig:agenti}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Informačný model profilu}
+\label{sec:profil}
+
+Obrázok~\ref{fig:profil} zachytáva jednotný informačný model profilu ako
+UML diagram tried. Základnou jednotkou nie je hodnota, ale
+\emph{tvrdenie}: pole profilu s~hodnotou, stavom (uvedené, odvodené,
+chýbajúce, rozporné) a~mierou istoty. Atribút \emph{oblasť} priraďuje
+tvrdenie k~jednej z~oblastí profilu podľa zadania (model card, účel
+a~obmedzenia, dáta, evaluácie, bezpečnosť). Tvrdenie so stavom uvedené
+alebo odvodené musí mať aspoň jeden dôkaz, teda úryvok s~polohou
+v~konkrétnom zdroji; toto obmedzenie je na diagrame zapísané pri triede
+Tvrdenie. Jeden úryvok môže dokladať viac tvrdení. Riziká, hodnotenia
+požiadaviek a~doplňujúce otázky sú súčasťou profilu; odpoveď používateľa
+na otázku sa uloží ako nový zdroj. Zoznam polí profilu (atribúty
+extrahované z~model cards) bude doplnený.
+
+\begin{figure}[ht]
+\centering
+\includestandalone[width=\textwidth]{uml/profil}
+\caption{UML diagram tried informačného modelu profilu}
+\label{fig:profil}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Nasadenie}
+\label{sec:nasadenie}
+
+Obrázok~\ref{fig:nasadenie} ukazuje rozmiestnenie komponentov na
+hostiteľskom počítači. Každá časť systému je samostatný kontajner (Docker
+alebo Podman). Používateľ ovláda systém cez CLI, lokálne alebo vzdialene;
+jazykové modely, databáza aj nahraté testované modely sú dostupné iba
+vnútri hostiteľa. Jazykové modely obsluhuje jedna alebo viac inštancií
+\texttt{llama-server}, keďže jedna inštancia obsluhuje jeden model
+(hlavný model orchestrátora a~menšie modely agentov). Register skillov je
+uložený v~databáze, generátor skillov a~generátor reportu bežia
+v~kontajneri orchestrátora. Analytik artefaktov nemá prístup na internet; s~databázou komunikuje iba
+cez vnútornú sieť kontajnerov.
+
+\begin{figure}[ht]
+\centering
+\includestandalone[width=\textwidth]{uml/nasadenie}
+\caption{UML diagram nasadenia}
+\label{fig:nasadenie}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Priebeh auditu}
+\label{sec:pipeline}
+
+Obrázok~\ref{fig:pipeline} opisuje priebeh auditu jedného modelu ako UML
+stavový diagram. Každé tvrdenie AI agenta prechádza kontrolou kritika;
+zamietnutý výstup opraví ten agent, ktorý ho vytvoril. Audit má limity:
+počet opráv jedného výstupu, počet iterácií a~čas čakania na odpoveď
+používateľa. Po ich vyčerpaní sa audit ukončí reportom, v~ktorom zostanú
+neoverené tvrdenia a~nezodpovedané otázky označené ako otvorené.
+
+\begin{figure}[ht]
+\centering
+\includestandalone[width=\textwidth]{uml/pipeline}
+\caption{UML stavový diagram priebehu auditu}
+\label{fig:pipeline}
+\end{figure}

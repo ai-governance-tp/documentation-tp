@@ -70,6 +70,13 @@
   urldate      = {2026-10-20}
 }
 
+@online{fmti-indicators,
+  author       = {{Stanford CRFM}},
+  title        = {Foundation Model Transparency Index: indicators (fmti-indicators.csv)},
+  url          = {https://github.com/stanford-crfm/fmti},
+  urldate      = {2026-10-22}
+}
+
 @online{masoudifard2024,
   author       = {Masoudifard, Arsalan and Sorond, Mohammad Mowlavi and Madadi, Moein and Sabokrou, Mohammad and Habibi, Elahe},
   title        = {Leveraging Graph-{RAG} and Prompt Engineering to Enhance {LLM}-Based Automated Requirement Traceability and Compliance Checks},
@@ -263,6 +270,55 @@
   urldate      = {2026-10-20}
 }
 
+@online{llamacpp,
+  author       = {{ggml-org}},
+  title        = {llama.cpp: {LLM} inference in {C/C++}},
+  url          = {https://github.com/ggml-org/llama.cpp},
+  urldate      = {2026-10-21}
+}
+
+@online{hf-pickle,
+  author       = {{Hugging Face}},
+  title        = {Pickle Scanning},
+  url          = {https://huggingface.co/docs/hub/security-pickle},
+  urldate      = {2026-10-21}
+}
+
+@online{safetensors,
+  author       = {{Hugging Face}},
+  title        = {safetensors: Simple, safe way to store and distribute tensors},
+  url          = {https://github.com/huggingface/safetensors},
+  urldate      = {2026-10-21}
+}
+
+@online{modelscan,
+  author       = {{Protect AI}},
+  title        = {ModelScan: Protection against Model Serialization Attacks},
+  url          = {https://github.com/protectai/modelscan},
+  urldate      = {2026-10-21}
+}
+
+@online{cyclonedx-mlbom,
+  author       = {{OWASP CycloneDX}},
+  title        = {Machine Learning Bill of Materials ({ML-BOM})},
+  url          = {https://cyclonedx.org/capabilities/mlbom/},
+  urldate      = {2026-10-21}
+}
+
+@online{pyrit,
+  author       = {{Microsoft}},
+  title        = {{PyRIT}: Python Risk Identification Tool for generative {AI}},
+  url          = {https://github.com/microsoft/PyRIT},
+  urldate      = {2026-10-21}
+}
+
+@online{inspect,
+  author       = {{UK AI Security Institute}},
+  title        = {Inspect: An open-source framework for large language model evaluations},
+  url          = {https://inspect.aisi.org.uk/},
+  urldate      = {2026-10-21}
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % D. Komerčné platformy a ostatné zdroje
 
@@ -300,6 +356,106 @@
   title        = {{OWASP} Top 10 2025 for {LLM} Applications: Risks and Mitigation Techniques},
   url          = {https://www.confident-ai.com/blog/owasp-top-10-2025-for-llm-applications-risks-and-mitigation-techniques},
   urldate      = {2026-10-20}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% F. Existujúce riešenia podobné cieľu projektu (overené 2026-10-21)
+
+@online{aibom-generator,
+  author       = {{OWASP GenAI Security Project}},
+  title        = {{AIBOM} Generator},
+  url          = {https://github.com/GenAI-Security-Project/aibom-generator},
+  urldate      = {2026-10-21}
+}
+
+@online{cardgen-code,
+  author       = {Liu, Jiarui},
+  title        = {AutomatedModelCardGeneration: kód a dátová množina {CardBench}},
+  url          = {https://github.com/jiarui-liu/AutomatedModelCardGeneration},
+  urldate      = {2026-10-21}
+}
+
+@inproceedings{zhang2026adaqe,
+  author       = {Zhang, H. and others},
+  title        = {{AdaQE-CG}: Adaptive Query Expansion for Web-Scale Generative {AI} Model and Data Card Generation},
+  booktitle    = {Proceedings of the ACM Web Conference (WWW 2026)},
+  date         = {2026},
+  eprint       = {2604.09617},
+  eprinttype   = {arxiv},
+  url          = {https://arxiv.org/abs/2604.09617},
+  urldate      = {2026-10-21}
+}
+
+@online{guldimann2024complai,
+  author       = {Guldimann, P. and others},
+  title        = {{COMPL-AI} Framework: A Technical Interpretation and {LLM} Benchmarking Suite for the {EU} Artificial Intelligence Act},
+  date         = {2024},
+  eprint       = {2410.07959},
+  eprinttype   = {arxiv},
+  url          = {https://github.com/compl-ai/compl-ai},
+  urldate      = {2026-10-21}
+}
+
+@online{white2024mof,
+  author       = {White, M. and Haddad, I. and Osborne, C. and others},
+  title        = {The Model Openness Framework: Promoting Completeness and Openness for Reproducibility, Transparency, and Usability in {AI}},
+  date         = {2024},
+  eprint       = {2403.13784},
+  eprinttype   = {arxiv},
+  url          = {https://arxiv.org/abs/2403.13784},
+  urldate      = {2026-10-21}
+}
+
+@online{mit-airisk,
+  author       = {{MIT FutureTech}},
+  title        = {The {AI} Risk Repository},
+  url          = {https://airisk.mit.edu/},
+  urldate      = {2026-10-21}
+}
+
+@online{anthropic-multiagent,
+  author       = {Hadfield, J. and Zhang, B. and Lien, K. and Scholz, F. and Fox, J. and Ford, D.},
+  title        = {How we built our multi-agent research system},
+  organization = {Anthropic},
+  date         = {2025-06-13},
+  url          = {https://www.anthropic.com/engineering/multi-agent-research-system},
+  urldate      = {2026-10-21}
+}
+
+@online{fourney2024magentic,
+  author       = {Fourney, A. and others},
+  title        = {Magentic-One: A Generalist Multi-Agent System for Solving Complex Tasks},
+  organization = {Microsoft Research},
+  date         = {2024},
+  eprint       = {2411.04468},
+  eprinttype   = {arxiv},
+  url          = {https://arxiv.org/abs/2411.04468},
+  urldate      = {2026-10-21}
+}
+
+@inproceedings{chen2024autoagents,
+  author       = {Chen, G. and Dong, S. and Shu, Y. and Zhang, G. and Sesay, J. and Karlsson, B. F. and Fu, J. and Shi, Y.},
+  title        = {{AutoAgents}: A Framework for Automatic Agent Generation},
+  booktitle    = {Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence (IJCAI 2024)},
+  date         = {2024},
+  eprint       = {2309.17288},
+  eprinttype   = {arxiv},
+  url          = {https://arxiv.org/abs/2309.17288},
+  urldate      = {2026-10-21}
+}
+
+@online{smolagents,
+  author       = {{Hugging Face}},
+  title        = {smolagents},
+  url          = {https://github.com/huggingface/smolagents},
+  urldate      = {2026-10-21}
+}
+
+@online{open-deep-research,
+  author       = {{LangChain}},
+  title        = {Open Deep Research},
+  url          = {https://github.com/langchain-ai/open_deep_research},
+  urldate      = {2026-10-21}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,91 @@
+% UML diagram nasadenia: všetko beží v kontajneroch na hostiteľskom počítači prevádzkovateľa.
+% Samostatne: latexmk -pdf nasadenie.tex   V dokumentácii: \includestandalone{uml/nasadenie}
+\documentclass[tikz,border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shadows,calc}
+\pgfdeclarelayer{zadne}
+\pgfsetlayers{zadne,background,main}
+\begin{document}
+\begin{tikzpicture}[
+    font=\footnotesize,
+    kont/.style={draw, fill=white, minimum height=1.05cm, align=center, inner sep=3pt},
+    agent/.style={kont, minimum width=2.1cm, fill=gray!6},
+    viac/.style={double copy shadow={shadow xshift=2.5pt, shadow yshift=-2.5pt, fill=white, draw}},
+    dyn/.style={kont, minimum width=2.1cm, viac},
+    skupina/.style={draw, rounded corners=4pt, inner sep=6pt},
+    hrana/.style={-{Stealth[length=2mm]}, semithick},
+    obe/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, semithick},
+    popis/.style={font=\scriptsize\itshape, inner sep=1.5pt},
+    nadpis/.style={font=\scriptsize, anchor=north west, inner sep=3pt}
+]
+% 3D strana UML uzla
+\newcommand\kocka[2]{%
+    \filldraw[fill=#2, semithick] (#1.north west) -- ++(0.28,0.28) -- ([xshift=0.28cm, yshift=0.28cm]#1.north east)
+        -- ([xshift=0.28cm, yshift=0.28cm]#1.south east) -- (#1.south east) -- (#1.north east) -- cycle;
+    \draw[semithick] (#1.north east) -- ++(0.28,0.28);}
+\newcommand\st[1]{{\scriptsize\guillemotleft#1\guillemotright}}
+
+    %%% aplikácia: orchestrátor a agenti
+    \node[kont, minimum width=3.6cm, very thick, fill=gray!22] (orch) at (5.4,-3.1)
+        {\st{container}\\\textbf{Orchestrátor}\\\scriptsize+ správca kontajnerov, generátor skillov,\\\scriptsize generátor reportu};
+
+    \node[agent] (s1) at (1.6,-5.75) {\st{container}\\Extraktor};
+    \node[agent] (s2) at (3.85,-5.75) {\st{container}\\Analytik rizík};
+    \node[agent] (s3) at (1.6,-7.15) {\st{container}\\Hodnotiteľ};
+    \node[agent] (s4) at (3.85,-7.15) {\st{container}\\Kritik};
+
+    \node[dyn] (d1) at (6.85,-5.75) {\st{container}\\Analytik artef.\\\scriptsize\textit{bez internetu}};
+    \node[dyn] (d2) at (9.15,-5.75) {\st{container}\\Tvorca otázok};
+    \node[dyn, dashed] (d3) at (6.85,-7.15) {\st{container}\\Nový skill};
+    \node[dyn] (d4) at (9.15,-7.15) {\st{container}\\Zberač};
+
+    \begin{scope}[on background layer]
+        \node[skupina, fill=gray!3, fit=(s1)(s4), inner ysep=9pt, yshift=4pt] (gst) {};
+        \node[skupina, fill=gray!3, fit=(d1)(d4), inner ysep=9pt, yshift=4pt, inner xsep=8pt] (gdyn) {};
+        \node[skupina, fill=gray!14, fit=(orch)(gst)(gdyn), inner sep=7pt, yshift=5pt] (app) {};
+    \end{scope}
+    \node[nadpis] at (gst.north west) {statickí: bežia stále};
+    \node[nadpis] at (gdyn.north west) {dynamickí: štart a~stop podľa potreby};
+    \node[nadpis, font=\scriptsize\bfseries] at (app.north west) {Orchestrátor a~agenti};
+
+    %%% služby vpravo
+    \node[kont, minimum width=3.1cm, fill=gray!12] (db) at (14.1,-3.1) {\st{container}\\PostgreSQL + pgvector\\\scriptsize dôkazy, profily,\\\scriptsize register skillov};
+    \node[kont, minimum width=3.1cm, very thick, viac] (llm) at (14.1,-5.35) {\st{container}\\\textbf{llama-server} [1..$n$]\\\scriptsize hlavný model, menšie modely};
+    \node[kont, minimum width=3.1cm] (proxy) at (14.1,-7.15) {\st{container}\\Proxy s~whitelistom};
+
+    %%% dáta testovaného modelu
+    \node[kont, minimum width=9.4cm, minimum height=0.9cm, fill=gray!12] (vol) at (5.4,-9.3)
+        {\st{volume}\ \textbf{Testované modely}: nahraté súbory (váhy, konfigurácia, model card)};
+
+    %%% kontajnerový runtime a hostiteľ
+    \coordinate (dtop) at (0.3,-1.75);
+    \coordinate (stop) at (0.3,-0.9);
+    \begin{pgfonlayer}{zadne}
+        \node[draw, thick, fill=gray!18, fit=(app)(db)(vol)(stop), inner xsep=22pt, inner ysep=16pt, xshift=3pt] (server) {};
+        \kocka{server}{gray!30}
+        \node[draw, semithick, fill=gray!9, fit=(dtop)(app)(db)(vol)(proxy), inner sep=8pt] (runtime) {};
+        \kocka{runtime}{gray!16}
+    \end{pgfonlayer}
+    \node[nadpis, font=\footnotesize, anchor=north east] at (server.north east) {\st{device}\ \textbf{Hostiteľský počítač s~GPU} (ľubovoľný server alebo pracovná stanica)};
+    \node[nadpis] at (runtime.north west) {\st{execution environment}\ \textbf{Kontajnerový runtime} (Docker alebo Podman)};
+
+    %%% používateľ a vonkajší svet
+    \node[kont, minimum width=3.6cm, fill=gray!18] (pc) at (4.0,1.3) {\st{device}\\\textbf{Počítač používateľa}\\CLI klient};
+    \kocka{pc}{gray!30}
+    \node[kont, dashed, minimum width=3.1cm] (web) at (14.1,-11.6) {\st{externé, voliteľné}\\niekoľko overených stránok};
+
+    %%% spojenia
+    \draw[obe] (pc.south) -- node[popis, left, pos=0.17, align=right] {$\downarrow$ príkazy, odpovede\\$\uparrow$ otázky, report} (pc.south |- orch.north);
+    \draw[obe] (orch.east) -- node[popis, above] {stav profilu, tvrdenia} (db.west);
+    \draw[obe] (app.east |- 0,-4.25) -- node[popis, above, pos=0.4] {úryvky, nálezy} (13.3,-4.25) -- (13.3,-4.25 |- db.south);
+    \draw[hrana] ([yshift=0.25cm]app.east |- llm) -- ([yshift=0.25cm]llm.west);
+    \draw[hrana] ([yshift=-0.25cm]llm.west) -- ([yshift=-0.25cm]app.east |- llm);
+    \node[popis, above] at ([yshift=0.25cm]$(app.east |- llm)!0.5!(llm.west)$) {prompt};
+    \node[popis, below] at ([yshift=-0.25cm]$(app.east |- llm)!0.5!(llm.west)$) {JSON};
+    \draw[hrana] (d4.east) -- (proxy.west);
+    \draw[hrana] (proxy) -- node[popis, right] {iba povolené domény} (web);
+    \draw[hrana] (gst.south) -- node[popis, right] {čítanie} (gst.south |- vol.north);
+    \draw[hrana] (gdyn.south) -- node[popis, right] {čítanie} (gdyn.south |- vol.north);
+\end{tikzpicture}
+\end{document}

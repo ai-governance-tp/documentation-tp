@@ -1,5 +1,14 @@
 \documentclass{FEIstyle}
 
+\usepackage{xltabular}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.multipart,fit,backgrounds,babel}
+% UML diagramy: zdroj uml/*.tex, po zmene ich zostaviť (latexmk -pdf v priečinku uml), vkladá sa ich PDF
+\usepackage[mode=image|tex]{standalone}
+% Otočená strana pre veľký diagram komponentov
+\usepackage{pdflscape}
+\usepackage{afterpage}
+
 % Zalamovanie: radšej voľnejšie medzery než text za okrajom
 \emergencystretch=3em
 \hyphenation{gover-nance de-ve-lop-ment}

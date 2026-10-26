@@ -1,0 +1,74 @@
+% Diagram orchestrátora a agentov: vstup, úloha AI, výstup a jeho cieľ.
+% Samostatne: latexmk -pdf agenti.tex   V dokumentácii: \includestandalone{uml/agenti}
+\documentclass[tikz,border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shapes.multipart}
+\begin{document}
+\begin{tikzpicture}[
+    font=\footnotesize,
+    karta/.style={draw, semithick, rectangle split, rectangle split parts=4,
+        rectangle split part fill={gray!20, white, white, gray!6},
+        text width=3.65cm, align=left, anchor=north, inner sep=3.5pt},
+    ai/.style={label={[fill=black, text=white, font=\tiny\bfseries\sffamily, rounded corners=1pt,
+        inner sep=1.3pt, anchor=north east, xshift=-3pt, yshift=-3pt]north east:AI}},
+    bezai/.style={label={[draw, font=\tiny\bfseries\sffamily, rounded corners=1pt, fill=white,
+        inner sep=1.1pt, anchor=north east, xshift=-3pt, yshift=-3pt]north east:bez AI}},
+    skupina/.style={draw, rounded corners=4pt, inner sep=6pt},
+    hrana/.style={-{Stealth[length=2mm]}, semithick},
+    popis/.style={font=\scriptsize\itshape, inner sep=1.5pt},
+    nadpis/.style={font=\scriptsize\bfseries, anchor=north west, inner sep=3pt}
+]
+% riadky karty: vstup, čo robí, výstup
+\newcommand\vs{{\scriptsize\textsf{vstup}}\enspace}
+\newcommand\ai{{\scriptsize\textsf{AI}}\enspace}
+\newcommand\ro{{\scriptsize\textsf{robí}}\enspace}
+\newcommand\vy{$\rightarrow$\enspace}
+\newcommand\karta[6]{% štýl, meno, x, y, vstup, (AI|robí) text, výstup
+    \node[karta, #1] (#2) at (#3) {#4\nodepart{second}#5\nodepart{third}#6};}
+
+    %%% orchestrátor a jazykový model
+    \node[karta, ai, very thick, text width=5.4cm, rectangle split part fill={gray!35, white, white, gray!10}] (orch) at (6.45,0)
+        {\textbf{Orchestrátor} \guillemotleft hlavný model\guillemotright
+        \nodepart{second}\vs stav profilu, výstupy agentov
+        \nodepart{third}\ai naplánuje podúlohy, vyberie skill
+        \nodepart{fourth}\vy podúlohy agentom};
+    \node[draw, very thick, text width=3.3cm, align=center, inner sep=4pt] (llm) at (13.1,-0.95)
+        {\textbf{Lokálne LLM}\\\scriptsize volajú ho komponenty\\\scriptsize so značkou \tikz[baseline=-0.6ex]\node[fill=black, text=white, font=\tiny\bfseries\sffamily, rounded corners=1pt, inner sep=1.1pt]{AI};};
+    \draw[hrana] ([yshift=0.2cm]orch.east |- llm) -- node[popis, above] {prompt} ([yshift=0.2cm]llm.west);
+    \draw[hrana] ([yshift=-0.2cm]llm.west) -- node[popis, below] {JSON} ([yshift=-0.2cm]orch.east |- llm);
+
+    %%% statickí agenti
+    \node[karta, ai] (s1) at (0,-3.6)
+        {\textbf{Extraktor}\nodepart{second}\vs úryvky dokumentácie\nodepart{third}\ai vyplní polia profilu\nodepart{fourth}\vy tvrdenia kritikovi};
+    \node[karta, ai] (s2) at (4.3,-3.6)
+        {\textbf{Analytik rizík}\nodepart{second}\vs profil, taxonómie\nodepart{third}\ai priradí riziká\nodepart{fourth}\vy riziká kritikovi};
+    \node[karta, ai] (s3) at (8.6,-3.6)
+        {\textbf{Hodnotiteľ kritérií}\nodepart{second}\vs profil, indikátory\nodepart{third}\ai vyhodnotí indikátory\nodepart{fourth}\vy hodnotenia kritikovi};
+    \node[karta, ai] (s4) at (12.9,-3.6)
+        {\textbf{Kritik}\nodepart{second}\vs výstup a~jeho dôkazy\nodepart{third}\ai overí dôkazy\nodepart{fourth}\vy verdikt orchestrátorovi};
+
+    %%% dynamickí agenti
+    \node[karta, bezai, rectangle split part fill={gray!8, white, white, gray!6}] (d1) at (0,-6.95)
+        {\textbf{Analytik artefaktov}\nodepart{second}\vs súbory modelu\nodepart{third}\ro pevné kontroly\nodepart{fourth}\vy nálezy do úložiska};
+    \node[karta, ai, rectangle split part fill={gray!8, white, white, gray!6}] (d2) at (4.3,-6.95)
+        {\textbf{Zberač}\nodepart{second}\vs chýbajúce údaje\nodepart{third}\ai navrhne dopyty\nodepart{fourth}\vy dokumenty do úložiska};
+    \node[karta, ai, rectangle split part fill={gray!8, white, white, gray!6}] (d3) at (8.6,-6.95)
+        {\textbf{Tvorca otázok}\nodepart{second}\vs polia bez zdroja\nodepart{third}\ai sformuluje otázky\nodepart{fourth}\vy otázky používateľovi};
+    \node[karta, ai, dashed, rectangle split part fill={gray!8, white, white, gray!6}] (d4) at (12.9,-6.95)
+        {\textbf{Nový skill} \textit{\scriptsize\guillemotleft experiment\guillemotright}\nodepart{second}\vs podúloha + skill\nodepart{third}\ai rieši podúlohu\nodepart{fourth}\vy výsledok kritikovi};
+
+    %%% skupiny
+    \begin{scope}[on background layer]
+        \node[skupina, fill=gray!5, fit=(s1)(s4), inner ysep=9pt, yshift=5pt] (gst) {};
+        \node[skupina, fill=white, fit=(d1)(d4), inner ysep=9pt, yshift=5pt] (gdyn) {};
+    \end{scope}
+    \node[nadpis] at (gst.north west) {Statickí agenti \textmd{(bežia stále)}};
+    \node[nadpis] at (gdyn.north west) {Dynamickí agenti \textmd{(spúšťajú sa podľa potreby)}};
+
+    %%% tok medzi orchestrátorom a agentmi
+    \draw[hrana] ([xshift=-0.9cm]orch.south) -- node[popis, left] {podúloha + skill} ([xshift=-0.9cm]orch.south |- gst.north);
+    \draw[hrana] ([xshift=0.9cm]orch.south |- gst.north) -- node[popis, right] {výstupy, verdikty} ([xshift=0.9cm]orch.south);
+    \draw[hrana, {Stealth[length=2mm]}-{Stealth[length=2mm]}] (orch.west) -| ([xshift=-0.45cm]gdyn.west) -- ([yshift=0cm]gdyn.west);
+\end{tikzpicture}
+\end{document}
