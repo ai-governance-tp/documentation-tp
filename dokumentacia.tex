@@ -95,6 +95,316 @@
 
 \FEIcore{kapitoly/jadro}
 
+\section{Špecifikácia extrahovaných atribútov a~verifikácie profilu modelu}
+\label{sec:specifikacia-atributov}
+
+Táto kapitola definuje štandardizovanú schému atribútov a~metadát, ktoré
+automatizovaný extrakčný agent získava z~dokumentácie modelov (\emph{model
+cards}, technické správy, vedecké publikácie) a~z~technických artefaktov
+repozitárov. Návrh schémy vychádza z~požiadaviek riadenia modelových rizík
+(\emph{Model Risk Management -- MRM}), bezpečnostných rámcov \textbf{OWASP Top
+10 for LLM Applications}, matice hrozieb \textbf{MITRE ATLAS}, rámca
+\textbf{NIST AI RMF} a~nariadenia \textbf{EÚ o~umelej inteligencii (EU AI Act,
+čl.~53 pre modely na všeobecné účely -- GPAI)}.
+
+Keďže textová dokumentácia modelov je v~praxi často neúplná, nekonzistentná
+alebo zámerne zamlčuje bezpečnostné obmedzenia, spracovanie každého atribútu je
+rozdelené do dvojfázového procesu podľa princípu nulovej dôvery (\emph{Zero
+Trust}):
+\begin{enumerate}
+    \item \textbf{Fáza~1 -- Automatizovaná extrakcia (dokumentácia a~metadáta
+    repozitára):} Extrakčný agent analyzuje štruktúrované hlavičky (YAML),
+    konfiguračné súbory (\texttt{config.json}, \texttt{tokenizer\_config.json}),
+    strom súborov repozitára a~neštruktúrovaný text technických správ.
+    \item \textbf{Fáza~2 -- Interná verifikácia a~bezpečnostné testovanie:} Pre
+    atribúty kritické z~hľadiska kybernetickej bezpečnosti (napr. odolnosť voči
+    \emph{prompt injection}, únik citlivých údajov, zraniteľnosť na
+    nízkych-zdrojových jazykoch alebo bezpečnosť serializácie) systém
+    nespolieha výlučne na deklarácie výrobcu, ale pri chýbajúcich či rizikových
+    hodnotách vyžaduje cielené statické a~dynamické testovanie.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Kategória 1: Identita a~pôvod modelu (Model Identity \& Provenance)}
+\label{sec:kat-identita}
+
+Cieľom tejto kategórie je vytvorenie súpisu komponentov umelej inteligencie
+(\emph{AI Bill of Materials -- AI-BOM}), kontrola integrity dodávateľského
+reťazca, overenie kryptografickej celistvosti artefaktov a~zabezpečenie súladu
+s~licenčnými podmienkami.
+
+{\footnotesize\widowpenalty=0\clubpenalty=0
+\setlength{\tabcolsep}{4pt}
+\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.35cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}X@{}}
+\caption{Špecifikácia atribútov v~kategórii Identita a~pôvod modelu}
+\label{tab:kat-identita} \\
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\textbf{\texttt{model\_\allowbreak id\_\allowbreak and\_\allowbreak version}} \newline (Identifikátor a~verzia modelu) &
+Kritická &
+Zabezpečuje nemenné sledovanie v~internom registri; zabraňuje nekontrolovanej zmene verzií (\emph{version drift}) alebo tichej výmene váh v~produkčnom prostredí (NIST AI RMF \emph{Govern 1.2}). &
+\texttt{meta-llama/\allowbreak Llama-3.1-70B\allowbreak @df5b2a1} \newline (\texttt{String}: Org/Názov + SHA komitu) &
+\textbf{Vždy dostupné v~metadátach (100\,\% -- YAML, URI, release tags).} Dynamické testovanie sa nevyžaduje; uplatňuje sa striktné uzamknutie (\emph{pinning}) SHA-hašu komitu v~CI/CD. \\
+\midrule
+
+\textbf{\texttt{base\_\allowbreak model\_\allowbreak lineage}} \newline (Rodokmeň základného modelu) &
+Kritická &
+Identifikuje riziká nadradeného dodávateľského reťazca (OWASP LLM03). Ak je základný model kontaminovaný, obsahuje zadné vrátka (\emph{backdoor}) alebo je stiahnutý regulátorom, všetky odvodené modely (\emph{fine-tunes}) dedia toto riziko. &
+\texttt{["mistralai/\allowbreak Mistral-7B-v0.1", "org/custom-sft"]} \newline (\texttt{Array<String>}: orientovaný graf) &
+\textbf{V~dokumentácii uvedené v~$\approx$70\,\% prípadov (kľúč \texttt{base\_model} v~YAML alebo sekcia \emph{Methodology}).} \textbf{Verifikácia:} Porovnanie architektúry, rozmerov vrstiev v~\texttt{config.json} a~slovníka v~\texttt{tokenizer.json} na odhalenie nepriznaného pôvodu zo zakázaných modelov. \\
+\midrule
+
+\textbf{\texttt{serialization\_\allowbreak format}} \newline (Formát serializácie váh) &
+Kritická &
+Určuje riziko spustenia ľubovoľného kódu (\emph{Remote Code Execution -- RCE}) pri načítaní modelu. Formáty založené na Python \texttt{pickle} (\texttt{.bin}, \texttt{.pt}, \texttt{.ckpt}) umožňujú vložiť škodlivý kód, zatiaľ čo \texttt{.safetensors} a~\texttt{.gguf} sú pamäťovo bezpečné. &
+\texttt{["safetensors", "pytorch\_bin"]} \newline (\texttt{Enum Array}: \texttt{safetensors}, \texttt{gguf}, \texttt{onnx}, \texttt{pickle\_pt}) &
+\textbf{Získané zo stromu súborov cez API repozitára (100\,\%).} \textbf{Povinný test:} Pri výskyte \texttt{.bin}/\texttt{.pt}/\texttt{.pkl} spustenie statických skenerov (\textbf{Picklescan / ModelScan}) na detekciu volaní \texttt{eval}/\texttt{os.system} a~izolovaná konverzia do \texttt{.safetensors}. \\
+\midrule
+
+\textbf{\texttt{cryptographic\_\allowbreak hashes}} \newline (Kryptografické haše) &
+Vysoká &
+Overenie integrity súborov váh pred ich prijatím do interného prostredia; ochrana pred neoprávnenou modifikáciou a~útokmi typu \emph{Man-in-the-Middle}. &
+\texttt{\{"SHA256":\allowbreak "e3b0c44298..."\}} \newline (\texttt{JSON Object}: Súbor $\rightarrow$ Haš) &
+\textbf{Dostupné v~Git LFS metadátach ($\approx$95\,\% -- \texttt{oid sha256:}).} \textbf{Povinná verifikácia:} Po stiahnutí súborov váh infraštruktúra lokálne vypočíta \texttt{sha256sum} a~porovná ho s~hodnotou extrahovanou agentom. \\
+\midrule
+
+\textbf{\texttt{license\_\allowbreak and\_\allowbreak restrictions}} \newline (Licencia a~obmedzenia použitia) &
+Kritická &
+Znižuje právne a~regulačné riziká. Mnohé modely s~otvorenými váhami využívajú vlastné licencie (napr. RAIL), ktoré zakazujú komerčné nasadenie, kritické odvetvia alebo trénovanie iných modelov na výstupoch. &
+\texttt{\{"spdx":\allowbreak "Apache-2.0", "restrictions":\allowbreak ["no\_military", "mau\_700m"]\}} &
+\textbf{Dostupné v~repozitári ($\approx$90\,\% -- YAML \texttt{license} a~súbor \texttt{LICENSE}).} Technicky sa netestuje; pri hodnote \texttt{Custom} alebo \texttt{Missing} systém automaticky pozastaví nasadenie do schválenia právnym oddelením (\emph{Legal Review}). \\
+\midrule
+
+\textbf{\texttt{architecture\_\allowbreak and\_\allowbreak modality}} \newline (Architektúra a~modality) &
+Vysoká &
+Definuje povrch útoku a~potrebné ochranné mechanizmy (napr. multimodálne VLM modely sú zraniteľné voči vizuálnym \emph{prompt injection} útokom; MoE architektúry majú špecifické riziká smerovania). &
+\texttt{\{"type":\allowbreak "Transformer (MoE)", "in":\allowbreak ["text", "image"], "params": "47B"\}} &
+\textbf{Vždy dostupné v~\texttt{config.json} a~úvodných tabuľkách (100\,\%).} Ak je identifikovaná podpora viacerých modalít (\texttt{image}/\texttt{audio}), automaticky sa priradia testy na krížovo-modálne injekcie. \\
+
+\end{xltabular}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Kategória 2: Dáta a~trénovací proces (Data \& Training Pipeline)}
+\label{sec:kat-data}
+
+Táto kategória sa zameriava na hodnotenie rizika otrávenia dát (\emph{Data
+Poisoning}), úniku osobných a~citlivých údajov (PII), dodržiavanie autorských
+práv a~transparentnosť trénovacieho procesu v~súlade s~čl.~53 nariadenia EU AI
+Act.
+
+{\footnotesize\widowpenalty=0\clubpenalty=0
+\setlength{\tabcolsep}{4pt}
+\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.35cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}X@{}}
+\caption{Špecifikácia atribútov v~kategórii Dáta a~trénovací proces}
+\label{tab:kat-data} \\
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\textbf{\texttt{training\_\allowbreak data\_\allowbreak provenance}} \newline (Pôvod trénovacích dát) &
+Kritická &
+Priama požiadavka EU AI Act (čl.~53 ods.~1 písm.~d). Hodnotí expozíciu voči neovereným webovým zberom náchylným na otrávenie dát (OWASP LLM04: \emph{Data and Model Poisoning}). &
+\texttt{\{"pretrain":\allowbreak ["CommonCrawl"], "sft":\allowbreak ["ShareGPT"], "disclosure":\allowbreak "Partial"\}} &
+\textbf{Zistiteľné iba z~textu dokumentácie ($\approx$40\,\% uvádza detaily).} Priamo otestovať pôvodný dataset nie je možné; stav \texttt{Undisclosed} automaticky zvyšuje rizikové skóre modelu (MRM penalizácia). \\
+\midrule
+
+\textbf{\texttt{pii\_\allowbreak and\_\allowbreak sensitive\_\allowbreak filtering}} \newline (Filtrácia PII a~tajomstiev) &
+Kritická &
+Hodnotí riziko, že si model zapamätal a~pri inferencii zreprodukuje osobné údaje, heslá, súkromné kryptografické kľúče alebo proprietárny zdrojový kód (OWASP LLM02: \emph{Sensitive Information Disclosure}). &
+\texttt{\{"pii\_redacted":\allowbreak true, "methods":\allowbreak ["Regex", "Presidio NER", "MinHash"]\}} &
+\textbf{V~dokumentácii uvedené zriedkavo ($\approx$30\,\% -- sekcia \emph{Data Curation}).} \textbf{Povinný test (ak chýba alebo je neisté):} Spustenie dynamických sond na extrakciu pamäte (\textbf{Memorization \& Canary Extraction Probes} v~nástroji \textbf{Garak} -- provokácia modelu na dopĺňanie \texttt{BEGIN RSA PRIVATE KEY}, e-mailov a~kódu). \\
+\midrule
+
+\textbf{\texttt{synthetic\_\allowbreak data\_\allowbreak lineage}} \newline (Pôvod syntetických dát) &
+Vysoká &
+Sleduje, či bol model trénovaný na výstupoch iných LLM (napr. GPT-4, Claude). Predstavuje právne riziko porušenia podmienok použitia (ToS), dedenie vodoznakov a~zosilnenie skrytých predsudkov (\emph{bias}). &
+\texttt{\{"synthetic":\allowbreak true, "generators":\allowbreak ["GPT-4"], "purpose": "SFT"\}} &
+\textbf{V~dokumentácii uvedené v~$\approx$50\,\% prípadov (sekcie \emph{SFT / Distillation}).} \textbf{Testovanie (podľa potreby):} Behaviorálny fingerprinting (testovanie na typické frázy odmietnutia iných výrobcov) a~štatistická detekcia syntetických vodoznakov. \\
+\midrule
+
+\textbf{\texttt{data\_\allowbreak cutoff\_\allowbreak date}} \newline (Časová hranica znalostí) &
+Stredná &
+Stanovuje časový horizont znalostí modelu; kritické pre bezpečnostné tímy využívajúce model na analýzu hrozieb, aby sa predišlo halucináciám o~zraniteľnostiach (CVE) zverejnených po tomto dátume. &
+\texttt{2025-03} \newline (\texttt{ISO-8601 YYYY-MM} alebo \texttt{Unknown}) &
+\textbf{V~dokumentácii uvedené v~$\approx$60\,\% prípadov.} \textbf{Testovanie (pri hodnote \texttt{Unknown}):} Rýchla časová sonda (\textbf{Temporal Probe}) -- dopytovanie modelu na chronologickú sadu známych udalostí a~CVE za posledných 24~mesiacov. \\
+\midrule
+
+\textbf{\texttt{contamination\_\allowbreak mitigation}} \newline (Dekontaminácia benchmarkov) &
+Stredná &
+Určuje, či sú deklarované výsledky bezpečnostných a~programátorských testov dôveryhodné, alebo sú umelo nadhodnotené v~dôsledku úniku testovacích úloh do trénovacej množiny. &
+\texttt{\{"decontaminated":\allowbreak true, "method":\allowbreak "13-gram overlap removal"\}} &
+\textbf{V~dokumentácii uvedené zriedkavo ($\approx$25\,\% -- prílohy \emph{Evaluation}).} \textbf{Testovanie:} Prehodnotenie modelu na interných (neverejných) testovacích sadách alebo na parafrázovaných a~mutovaných variantoch verejných benchmarkov. \\
+
+\end{xltabular}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Kategória 3: Bezpečnosť a~povrch zraniteľností (Security \& Vulnerability Surface)}
+\label{sec:kat-bezpecnost}
+
+Kategória pokrýva odolnosť voči adverzným útokom, trvácnosť bezpečnostného
+zarovnania (\emph{alignment}), bezpečnosť agentického volania nástrojov a~známe
+zraniteľnosti prostredia behu podľa štandardov MITRE ATLAS a~OWASP LLM Top~10.
+
+{\footnotesize\widowpenalty=0\clubpenalty=0
+\setlength{\tabcolsep}{4pt}
+\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.35cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}X@{}}
+\caption{Špecifikácia atribútov v~kategórii Bezpečnosť a~povrch zraniteľností}
+\label{tab:kat-bezpecnost} \\
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\textbf{\texttt{safety\_\allowbreak alignment\_\allowbreak methodology}} \newline (Metodológia bezpečnostného zarovnania) &
+Kritická &
+Určuje základnú odolnosť voči generovaniu škodlivého obsahu. Modely trénované iba pomocou SFT (alebo komunitne upravené \emph{uncensored / abliterated} váhy) vyžadujú prísne externé filtre pred nasadením. &
+\texttt{\{"techniques":\allowbreak ["RLHF", "DPO"], "abliterated":\allowbreak false\}} &
+\textbf{V~dokumentácii uvedené v~$\approx$60\,\% prípadov (výskyt slov \emph{uncensored / abliterated} = okamžité kritické riziko).} \textbf{Povinný test:} Základný test odmietnutia škodlivých požiadaviek (\textbf{HarmBench / Do-Not-Answer Baseline}) na overenie skutočnej funkčnosti bezpečnostných zábran. \\
+\midrule
+
+\textbf{\texttt{prompt\_\allowbreak injection\_\allowbreak and\_\allowbreak jailbreak\_\allowbreak evals}} \newline (Odolnosť voči Prompt Injection a~jailbreakom) &
+Kritická &
+Kvantifikuje náchylnosť na priame a~nepriame vloženie inštrukcií (OWASP LLM01) a~viackrokové obídenie obmedzení. Rozhodujúci parameter pri spracovaní nedôveryhodných externých vstupov (e-maily, web, dokumenty). &
+\texttt{\{"benchmarks":\allowbreak [\{"name":\allowbreak "CyberSecEval-2", "asr": 18.4\}], "inst\_hierarchy":\allowbreak true\}} &
+\textbf{V~dokumentácii uvádza len $\approx$15\,\% modelov (veľkí výrobcovia), údajom však nemožno bezvýhradne dôverovať.} \textbf{Povinný test (100\,\% modelov):} Automatizovaný Red-Teaming v~nástrojoch \textbf{PyRIT / Garak / Promptfoo} (priame jailbreaky, viackrokové útoky \emph{Crescendo}, nepriame RAG injekcie, obfuskácia Base64/ASCII). \\
+\midrule
+
+\textbf{\texttt{agentic\_\allowbreak and\_\allowbreak tool\_\allowbreak use\_\allowbreak surface}} \newline (Agentické funkcie a~volanie nástrojov) &
+Kritická &
+Modely s~natívnou podporou volania funkcií (\emph{Function Calling}), interpretom kódu alebo systémovými príkazmi predstavujú vysoké riziko nadmernej autonómie (OWASP LLM06: \emph{Excessive Agency}) a~RCE pri kompromitácii. &
+\texttt{\{"function\_\allowbreak calling": true, "code\_exec":\allowbreak true\}} &
+\textbf{Jednoznačne zistiteľné z~\texttt{tokenizer\_config.json} (100\,\% -- tokeny \texttt{<tool\_call>}, \texttt{<|python\_tag|>}).} \textbf{Povinný test (ak \texttt{true}):} Testovanie v~izolovanom kontajneri na \textbf{Tool-Use Hijacking} (pokus o~vyvolanie neoprávneného API volania, exfiltráciu dát cez parametre URL alebo únik z~pieskoviska). \\
+\midrule
+
+\textbf{\texttt{cyber\_\allowbreak offense\_\allowbreak and\_\allowbreak cbrn\_\allowbreak evals}} \newline (Hodnotenie kybernetických a~CBRN rizík) &
+Vysoká &
+Hodnotí katastrofické riziká dvojakého použitia (systémové riziká podľa EU AI Act): schopnosť autonómne generovať exploity, škodlivý kód alebo asistovať pri vývoji nebezpečných látok (CBRN). &
+\texttt{\{"domains":\allowbreak ["Cyber Offense", "CBRN"], "risk\_tier":\allowbreak "Medium"\}} &
+\textbf{V~dokumentácii uvedené pri menej ako 10\,\% modelov (sekcie \emph{System Card / Frontier Risk}).} \textbf{Povinný test (pre veľké a~kódovacie modely):} Spustenie špecifických testov kybernetickej bezpečnosti (\textbf{Meta CyberSecEval -- Exploit Generation \& Insecure Code}) a~benchmarku \textbf{WMDP}. \\
+\midrule
+
+\textbf{\texttt{known\_\allowbreak cves\_\allowbreak and\_\allowbreak runtime\_\allowbreak vulns}} \newline (Známe CVE a~zraniteľnosti kódu) &
+Vysoká &
+Sleduje zraniteľnosti vo vlastnom kóde modelu (vyžadujúcom parameter \texttt{trust\_\allowbreak remote\_\allowbreak code=True}), vlastných tokenizéroch alebo v~engine inferencie (\texttt{vLLM}, \texttt{llama.cpp}). &
+\texttt{\{"trust\_remote":\allowbreak true, "cves":\allowbreak ["CVE-2024-XXXX"]\}} &
+\textbf{Prítomnosť vlastného kódu je zistiteľná z~\texttt{config.json} (100\,\% -- kľúč \texttt{auto\_map}).} \textbf{Povinný test:} Ak repozitár obsahuje vlastné skripty \texttt{.py} (\texttt{auto\_map}), vykoná sa statická analýza bezpečnosti kódu (\textbf{SAST: Semgrep / Bandit}) pred načítaním modelu. \\
+
+\end{xltabular}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Kategória 4: Prevádzkové hranice a~obmedzenia (Operational Boundaries \& Limitations)}
+\label{sec:kat-obmedzenia}
+
+Kategória definuje prevádzkové limity pre účely riadenia modelových rizík (MRM),
+profilovanie miery halucinácií, odolnosť voči vyčerpaniu zdrojov (\emph{Model
+DoS}) a~zraniteľnosti súvisiace s~viacjazyčným spracovaním.
+
+{\footnotesize\widowpenalty=0\clubpenalty=0
+\setlength{\tabcolsep}{4pt}
+\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{1.35cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}X@{}}
+\caption{Špecifikácia atribútov v~kategórii Prevádzkové hranice a~obmedzenia}
+\label{tab:kat-obmedzenia} \\
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Názov atribútu} & \textbf{Priorita} & \textbf{Zdôvodnenie (Bezpečnosť a~governance)} & \textbf{Príklad hodnoty / Očakávaný formát} & \textbf{Očakávanie v~dokumentácii vs. interné testovanie} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\textbf{\texttt{out\_\allowbreak of\_\allowbreak scope\_\allowbreak and\_\allowbreak prohibited\_\allowbreak uses}} \newline (Zakázané a~neodporúčané použitie) &
+Kritická &
+Vymedzuje hranice prípustného nasadenia pre interné tímy. Nasadenie modelu v~zakázanej oblasti (napr. riadenie kritickej infraštruktúry, automatizovaná medicínska diagnostika, biometria) porušuje NIST AI RMF a~pravidlá EU AI Act pre vysokorizikové systémy. &
+\texttt{["Critical\allowbreak\ infrastructure", "Automated medical advice"]} \newline (\texttt{Array\allowbreak <String>}) &
+\textbf{Deklaratívny atribút (uvedený pri $\approx$65\,\% modelov v~sekcii \emph{Out-of-Scope Use / Limitations}).} Technicky sa netestuje; slúži ako vstup pre politický engine (\emph{Policy Engine}), ktorý automaticky zablokuje žiadosť o~nasadenie, ak sa účel projektu zhoduje so zakázanou doménou. \\
+\midrule
+
+\textbf{\texttt{hallucination\_\allowbreak and\_\allowbreak factuality}} \newline (Miera halucinácií a~faktická presnosť) &
+Vysoká &
+Kvantifikuje riziko konfabulácie. Vysoká miera halucinácií v~systémoch RAG alebo v~asistentoch pre bezpečnostných analytikov (SOC) môže viesť k~nesprávnym zásahom pri riešení incidentov. &
+\texttt{\{"TruthfulQA":\allowbreak 64.2, "SimpleQA": 38.1\}} \newline (\texttt{JSON Object}: Benchmark $\rightarrow$ Skóre) &
+\textbf{V~dokumentácii uvedené pri $\approx$40\,\% modelov (evaluačné tabuľky).} \textbf{Povinný test (pre RAG a~analytické nasadenia):} Vyhodnotenie na internom referenčnom datasete (\textbf{RAG Groundedness / Faithfulness Eval}) overujúcom prísne dodržiavanie poskytnutého kontextu. \\
+\midrule
+
+\textbf{\texttt{context\_\allowbreak window\_\allowbreak and\_\allowbreak degradation}} \newline (Kontextové okno a~degradácia pozornosti) &
+Vysoká &
+Zabraňuje odmietnutiu služby (\emph{Model DoS}) a~tichému obídeniu bezpečnostných inštrukcií, pri ktorom sa systémový bezpečnostný prompt „stratí“ alebo oslabí vo veľmi dlhom kontexte (efekt \emph{Lost in the Middle}). &
+\texttt{\{"claimed\_max":\allowbreak 128000, "eff\_ruler":\allowbreak 72.4\}} &
+\textbf{V~\texttt{config.json} (\texttt{max\_position\_embeddings}) uvedené vždy (100\,\%), avšak efektívny kontext býva výrazne kratší.} \textbf{Povinný test:} Test \textbf{Many-Shot Jailbreaking / Long-Context Safety Retention} -- overenie, či model dodržiava bezpečnostný systémový prompt aj pri zaplnení kontextového okna na 80--90\,\%. \\
+\midrule
+
+\textbf{\texttt{compute\_\allowbreak and\_\allowbreak vram\_\allowbreak footprint}} \newline (Hardvérové požiadavky a~spotreba VRAM) &
+Stredná &
+Nevyhnutné pre kapacitné plánovanie, kontrolu nákladov a~ochranu pred útokmi vyčerpania výpočtových zdrojov (\emph{Sponge Attacks}) v~interných GPU klastroch. &
+\texttt{\{"fp16\_vram":\allowbreak 140, "int4\_vram": 42\}} &
+\textbf{Matematicky odvoditeľné z~počtu parametrov a~presnosti v~\texttt{config.json} (100\,\%).} \textbf{Záťažový test (pri nasadení):} Profilovanie maximálnej spotreby pamäte KV-cache a~latencie pri extrémnych vstupoch (\textbf{Sponge / Resource Exhaustion Probes}). \\
+\midrule
+
+\textbf{\texttt{bias\_\allowbreak toxicity\_\allowbreak and\_\allowbreak weak\_\allowbreak languages}} \newline (Predsudky, toxicita a~slabé jazyky) &
+Vysoká &
+Útočníci cielene využívajú \textbf{nízko-zdrojové a~menej rozšírené jazyky} (napr. svahilčina, zuluština, gaelčina, transliterácia), aby obišli bezpečnostné filtre trénované primárne na anglickom jazyku. &
+\texttt{\{"RealToxicity":\allowbreak 0.08, "weak\_langs":\allowbreak ["Low-resource scripts"]\}} &
+\textbf{V~dokumentácii sa zraniteľnosť na menej rozšírených jazykoch uvádza v~menej ako 5\,\% prípadov.} \textbf{Povinný test:} \textbf{Multilingual / Cross-Lingual Jailbreak Test} -- automatizovaný preklad škodlivých promptov do cieľových jazykov organizácie (vrátane slovenčiny) a~sady nízko-zdrojových jazykov na overenie konzistentnosti bezpečnostného zarovnania. \\
+
+\end{xltabular}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Architektonické princípy spracovania a~prepojenia dôkazov}
+\label{sec:principy-extrakcie}
+
+Na zamedzenie halucinácií samotného extrakčného agenta a~zabezpečenie plnej
+auditovateľnosti sú v~architektúre spracovania uplatnené tri riadiace mechanizmy:
+\begin{enumerate}
+    \item \textbf{Trojstavová epistemická klasifikácia chýbajúcich údajov
+    (\texttt{Extracted} $|$ \texttt{Explicitly\_None} $|$
+    \texttt{Unreported\_Omission}):} Agent nesmie zamieňať chýbajúcu informáciu
+    v~dokumentácii s~negatívnou hodnotou. Ak technická správa neobsahuje
+    zmienku o~filtrácii osobných údajov (PII), atribút nadobúda stav
+    \texttt{Unreported\_Omission} (nezverejnené opomenutie), čo v~systéme
+    hodnotenia rizík automaticky aktivuje zvýšenú penalizáciu a~vyvolá
+    dynamické testovanie vo Fáze~2.
+    \item \textbf{Priorita technických artefaktov nad deklaratívnym textom
+    (\emph{Artifact vs. Prose Reconciliation}):} V~prípade rozporu medzi
+    textovým opisom v~\texttt{README.md} a~skutočnými súbormi v~repozitári majú
+    absolútnu prednosť technické artefakty (\texttt{config.json},
+    \texttt{tokenizer\_config.json}, prípony súborov váh a~text súboru
+    \texttt{LICENSE}).
+    \item \textbf{Vynútenie dohľadateľnosti k~dôkazom (\emph{Citation \&
+    Grounding Enforcement}):} Každý extrahovaný atribút vo výstupnej JSON
+    schéme musí obsahovať štruktúrovaný odkaz na zdrojový dôkaz
+    (\texttt{source\_evidence}) pozostávajúci z~identifikátora dokumentu, čísla
+    strany alebo riadku a~presnej citácie úryvku.
+\end{enumerate}
+
 \FEIconclusion{kapitoly/zaver}
 
 \nocite{*}
