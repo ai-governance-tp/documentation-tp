@@ -38,25 +38,25 @@
     nadpis/.style={font=\scriptsize, anchor=north west, inner sep=3pt}
 ]
     % --- Rozhranie ---
-    \node[komp, minimum width=2.4cm] (report) at (1.5,0) {Generátor\\reportu};
-    \node[komp, minimum width=4.4cm] (ui) at (6.75,0) {Rozhranie na spustenie auditu\\(zatiaľ CLI)};
+    \node[komp, minimum width=2.4cm] (report) at (1.4,0) {Generátor\\reportu};
+    \node[komp, minimum width=4.2cm] (ui) at (6.5,0) {Rozhranie na spustenie\\auditu (zatiaľ CLI)};
+    \node[komp, minimum width=2.4cm] (cont) at (11.8,0) {Správca\\kontajnerov};
 
     % --- Riadenie ---
-    \node[komp, minimum width=2.4cm] (reg) at (1.5,-2.6) {Register\\skillov};
-    \node[hlavny, ai, minimum width=3.4cm, minimum height=1.3cm] (orch) at (6.3,-2.6) {\textbf{Orchestrátor}\\\scriptsize\guillemotleft hlavný model\guillemotright};
-    \node[komp, minimum width=2.7cm, very thick] (llm) at (11.2,-2.6) {\textbf{Lokálne LLM}\\\scriptsize llama.cpp,\\\scriptsize stiahnuté modely};
-    \node[komp, minimum width=2.4cm] (cont) at (14.6,-2.6) {Správca\\kontajnerov};
-    \node[pokus, ai, minimum width=2.75cm] (gen) at (1.5,-5.2) {\textit{\guillemotleft experiment\guillemotright}\\Generátor\\skillov};
+    \node[komp, minimum width=2.4cm] (reg) at (1.4,-2.7) {Register\\skillov};
+    \node[hlavny, ai, minimum width=3.4cm, minimum height=1.3cm] (orch) at (6.5,-2.7) {\textbf{Orchestrátor}\\\scriptsize\guillemotleft hlavný model\guillemotright};
+    \node[komp, minimum width=2.7cm, very thick] (llm) at (11.8,-2.7) {\textbf{Lokálne LLM}\\\scriptsize llama.cpp,\\\scriptsize stiahnuté modely};
+    \node[pokus, ai, minimum width=2.6cm] (gen) at (1.4,-4.75) {\textit{\guillemotleft experiment\guillemotright}\\Generátor\\skillov};
 
     % --- Agenti ---
-    \node[agent, ai] (s1) at (5.0,-5.55) {Extraktor\\profilu};
-    \node[agent, ai] (s2) at (7.7,-5.55) {Analytik\\rizík};
-    \node[agent, ai] (s3) at (5.0,-6.95) {Hodnotiteľ\\kritérií};
-    \node[agent, ai] (s4) at (7.7,-6.95) {Kritik};
-    \node[agent, fill=white] (d1) at (11.5,-5.55) {Analytik\\artefaktov};
-    \node[agent, ai, fill=white] (d2) at (14.2,-5.55) {Tvorca\\otázok};
-    \node[agent, ai, fill=white, dashed] (d3) at (11.5,-6.95) {Agent\\s~novým skillom};
-    \node[agent, ai, fill=white] (d4) at (14.2,-6.95) {Zberač\\z~whitelistu};
+    \node[agent, ai] (s1) at (1.6,-7.35) {Extraktor\\profilu};
+    \node[agent, ai] (s2) at (4.3,-7.35) {Analytik\\rizík};
+    \node[agent, ai] (s3) at (1.6,-8.75) {Hodnotiteľ\\kritérií};
+    \node[agent, ai] (s4) at (4.3,-8.75) {Kritik};
+    \node[agent, fill=white] (d1) at (8.0,-7.35) {Analytik\\artefaktov};
+    \node[agent, ai, fill=white] (d2) at (10.7,-7.35) {Tvorca\\otázok};
+    \node[agent, ai, fill=white, dashed] (d3) at (8.0,-8.75) {Agent\\s~novým skillom};
+    \node[agent, ai, fill=white] (d4) at (10.7,-8.75) {Zberač\\z~whitelistu};
 
     \begin{scope}[on background layer]
         \node[skupina, fill=gray!4, fit=(s1)(s4), inner ysep=8pt, yshift=3pt] (stat) {};
@@ -68,50 +68,52 @@
     \node[nadpis, font=\scriptsize\bfseries] at (agenti.north west) {Agenti v~kontajneroch (Docker alebo Podman) \textmd{\guillemotleft malé úlohy, malý kontext\guillemotright}};
 
     % --- Dáta ---
-    \node[data] (dokazy) at (1.5,-10.3) {\scriptsize\guillemotleft database\guillemotright\\Úložisko dôkazov\\a~profilov};
-    \node[artefakt] (modely) at (5.4,-10.3) {\scriptsize\guillemotleft artifact\guillemotright\\Testované modely\\(nahraté súbory)};
-    \node[artefakt] (katalog) at (9.5,-10.3) {\scriptsize\guillemotleft artifact\guillemotright\\Katalóg kritérií (FMTI,\\EU AI Act, OWASP, ATLAS)};
-    \node[komp, minimum width=2.6cm] (proxy) at (14.2,-10.3) {Proxy\\s~whitelistom};
+    \node[data] (dokazy) at (1.45,-12.2) {\scriptsize\guillemotleft database\guillemotright\\Úložisko dôkazov\\a~profilov};
+    \node[artefakt] (modely) at (5.0,-12.2) {\scriptsize\guillemotleft artifact\guillemotright\\Testované modely\\(nahraté súbory)};
+    \node[artefakt] (katalog) at (8.4,-12.2) {\scriptsize\guillemotleft artifact\guillemotright\\Katalóg kritérií\\\scriptsize(FMTI, EU AI Act,\\\scriptsize OWASP, ATLAS)};
+    \node[komp, minimum width=2.4cm] (proxy) at (11.75,-12.2) {Proxy\\s~whitelistom};
 
     % --- Hranica systému a jediný vonkajší prvok ---
-    \coordinate (lavy) at (-0.75,0);
+    \coordinate (lavy) at (-0.85,0);
+    \coordinate (pravy) at (13.55,0);
     \begin{scope}[on background layer]
-        \node[draw, thick, rounded corners=6pt, fit=(report)(ui)(cont)(dokazy)(proxy)(agenti)(lavy), inner sep=9pt, yshift=7pt] (sys) {};
+        \node[draw, thick, rounded corners=6pt, fit=(report)(ui)(cont)(dokazy)(katalog)(proxy)(agenti)(lavy)(pravy), inner sep=9pt, yshift=7pt] (sys) {};
     \end{scope}
-    \node[nadpis, font=\small\bfseries] at (sys.north west) {Systém na hodnotenie AI modelov \textmd{\scriptsize(beží lokálne u~prevádzkovateľa, bez externých API)}};
-    \node[komp, dashed, minimum width=3.4cm] (web) at (14.2,-12.75) {\textit{\guillemotleft externé, voliteľné\guillemotright}\\niekoľko overených stránok};
+    \node[nadpis, font=\small\bfseries, align=left] at (sys.north west) {Systém na hodnotenie AI modelov \textmd{\scriptsize(beží lokálne u~prevádzkovateľa, bez externých API)}};
+    \node[komp, dashed, minimum width=3.4cm] (web) at (11.75,-14.75) {\textit{\guillemotleft externé, voliteľné\guillemotright}\\niekoľko overených stránok};
 
     % --- Legenda ---
-    \node[anchor=west, font=\scriptsize, align=left] at (-0.6,-12.6) {%
+    \node[anchor=west, font=\scriptsize, align=left] at (-0.85,-14.75) {%
         \tikz\node[fill=black, text=white, font=\tiny\bfseries\sffamily, rounded corners=1pt, inner sep=1.3pt]{AI};\
         komponent volá lokálny jazykový model\\[2pt]
-        Všetky výstupy jazykového modelu sú JSON podľa pevnej schémy.};
+        Všetky výstupy jazykového modelu\\sú JSON podľa pevnej schémy.};
 
     % --- Hrany: rozhranie a orchestrátor ---
-    \draw[hrana] ([xshift=0.5cm]ui.south -| orch.north) -- node[popis, right, pos=0.3, align=left] {$\downarrow$ model\_id, súbory, odpovede\\$\uparrow$ doplňujúce otázky} ([xshift=0.5cm]orch.north);
-    \draw[hrana] ([xshift=-0.1cm]orch.north) -- ([xshift=-0.1cm]ui.south -| orch.north);
+    \draw[hrana] ([xshift=0.3cm]ui.south -| orch.north) -- node[popis, right, pos=0.22, align=left] {$\downarrow$ model\_id, súbory, odpovede\\$\uparrow$ doplňujúce otázky} ([xshift=0.3cm]orch.north);
+    \draw[hrana] ([xshift=-0.3cm]orch.north) -- ([xshift=-0.3cm]ui.south -| orch.north);
     \draw[hrana] (report) -- node[popis, above] {report} (ui);
     \draw[hrana] ([xshift=-1.0cm]orch.north) -- ++(0,0.95) -| node[popis, pos=0.25, above] {výsledný profil} (report.south);
-    \draw[hrana, {Stealth[length=2mm]}-{Stealth[length=2mm]}] ([xshift=-1.4cm]orch.north) -- ++(0,0.45) -| (-0.25,-10.3) -- (dokazy.west);
-    \node[popis, rotate=90, align=center] at (-0.5,-6.2) {stav profilu $\leftarrow$ / schválené tvrdenia $\rightarrow$};
+    \draw[hrana, {Stealth[length=2mm]}-{Stealth[length=2mm]}] ([xshift=-1.4cm]orch.north) -- ++(0,0.4) -| (-0.4,-12.2) -- (dokazy.west);
+    \node[popis, rotate=90, align=center] at (-0.65,-7.5) {stav profilu $\leftarrow$ / schválené tvrdenia $\rightarrow$};
     \draw[hrana] (orch) -- node[popis, above, align=center] {podúloha\\[-1pt]$\leftarrow$ skill} (reg);
-    \draw[hrana] (orch) -- node[popis, above, align=center] {prompt\\[-1pt]$\leftarrow$ plán (JSON)} (llm);
-    \draw[hrana] ([xshift=1.2cm]orch.north) |- (12.0,-1.4) -| node[popis, pos=0.75, right, align=left] {spusti /\\zastav agenta} (cont.north);
-    \draw[zavislost] ([yshift=-0.35cm]orch.west) -| (3.1,-5.2) -- (gen.east);
+    \draw[hrana] (orch) -- node[popis, above, align=center] {prompt\\[-1pt]$\leftarrow$ plán\\[-1pt](JSON)} (llm);
+    \draw[hrana] ([xshift=1.3cm]orch.north) |- (cont.south |- 0,-1.75) -- (cont.south);
+    \node[popis, above] at (10.0,-1.75) {spusti / zastav agenta};
+    \draw[zavislost] ([yshift=-0.35cm]orch.west) -| (3.15,-4.75) -- (gen.east);
     \draw[zavislost] (gen) -- node[popis, left] {nový skill} (reg);
-    \node[popis, rotate=90] at (2.88,-3.75) {opis podúlohy};
+    \node[popis, rotate=90] at (3.4,-4.0) {opis podúlohy};
 
     % --- Hrany: orchestrátor a agenti ---
-    \draw[hrana] ([xshift=-0.75cm]orch.south) -- node[popis, left, align=right] {podúloha + skill\\(JSON)} ([xshift=-0.75cm]orch.south |- agenti.north);
-    \draw[hrana] ([xshift=0.75cm]orch.south |- agenti.north) -- node[popis, right, align=left] {tvrdenia s~dôkazmi\\a~istotou (JSON)} ([xshift=0.75cm]orch.south);
-    \draw[hrana] (agenti.north -| llm) -- node[popis, right, align=left] {prompt\\$\leftarrow$ odpoveď (JSON)} (llm.south);
-    \draw[hrana] (cont.south) -- node[popis, right, pos=0.5] {kontajnery} (cont.south |- agenti.north);
+    \draw[hrana] ([xshift=-0.6cm]orch.south) -- node[popis, left, align=right] {podúloha + skill\\(JSON)} ([xshift=-0.6cm]orch.south |- agenti.north);
+    \draw[hrana] ([xshift=0.6cm]orch.south |- agenti.north) -- node[popis, right, align=left] {tvrdenia s~dôkazmi\\a~istotou (JSON)} ([xshift=0.6cm]orch.south);
+    \draw[hrana] (agenti.north -| llm) -- node[popis, right, align=left, pos=0.45] {prompt\\$\leftarrow$ odpoveď\\(JSON)} (llm.south);
+    \draw[hrana] (cont.east) -- (13.25,0) |- node[popis, pos=0.42, rotate=90, above] {kontajnery} (agenti.east);
 
     % --- Hrany: agenti a dáta ---
-    \draw[hrana] (agenti.south -| 3.65,0) |- node[popis, pos=0.25, right, align=left] {úryvky $\rightarrow$\\$\leftarrow$ nálezy,\\$\leftarrow$ nové dokumenty} (dokazy.east);
+    \draw[hrana] (agenti.south -| 3.25,0) |- node[popis, pos=0.3, left, align=right] {úryvky $\rightarrow$\\$\leftarrow$ nálezy,\\$\leftarrow$ nové\\dokumenty} (dokazy.east);
     \draw[hrana] (modely.north) -- node[popis, right] {súbory modelu} (agenti.south -| modely);
     \draw[hrana] (katalog.north) -- node[popis, right] {indikátory} (agenti.south -| katalog);
-    \draw[hrana] (d4.south) -- node[popis, left, pos=0.6] {dopyty} (proxy.north);
+    \draw[hrana] (d4.south -| proxy.north) -- node[popis, right] {dopyty} (proxy.north);
     \draw[hrana, dashed] (proxy) -- node[popis, right] {iba povolené domény} (web);
 \end{tikzpicture}
 \end{document}

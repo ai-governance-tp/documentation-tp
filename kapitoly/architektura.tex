@@ -14,16 +14,6 @@ podľa potreby. Systém nie je viazaný na konkrétne prostredie: beží na
 školy alebo firmy.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% diagram komponentov na samostatnej otočenej strane (po aktuálnej strane, aby bol prvý)
-\afterpage{\begin{landscape}
-\begin{figure}[p]
-\centering
-\includestandalone[width=\linewidth,height=0.9\textheight,keepaspectratio]{uml/komponenty}
-\caption{UML diagram komponentov systému (šípky znázorňujú tok dát)}
-\label{fig:komponenty}
-\end{figure}
-\end{landscape}}
-
 \subsection{Princípy návrhu}
 \label{sec:principy}
 
@@ -33,7 +23,8 @@ podľa potreby. Systém nie je viazaný na konkrétne prostredie: beží na
     v~\texttt{llama-server} z~projektu llama.cpp~\cite{llamacpp}. Testovaný
     model sa nahrá ako súbory.
     \item \textbf{Internet iba výnimočne.} Prístup von je vypnutý; ak je
-    potrebný, ide cez proxy na niekoľko overených stránok (whitelist).
+    potrebný, ide cez proxy na niekoľko overených stránok (whitelist,
+    tabuľka~\ref{tab:whitelist}).
     \item \textbf{Žiadne zistenie bez dôkazu.} Každé tvrdenie v~profile
     odkazuje na konkrétny úryvok zdroja, inak sa údaj označí ako chýbajúci.
     \item \textbf{Malé úlohy namiesto jednej veľkej.} Agent rieši úzku
@@ -42,6 +33,32 @@ podľa potreby. Systém nie je viazaný na konkrétne prostredie: beží na
     jazykový model, overí kritik (vzor actor-critic
     a~self-refine~\cite{madaan2023selfrefine}).
 \end{itemize}
+
+\paragraph{Whitelist.} Zberač má cez proxy prístup iba na stránky
+v~tabuľke~\ref{tab:whitelist}. Pri Hugging Face a~GitHub sa uprednostňujú
+oficiálne repozitáre vývojárov modelu; informácie z~ostatných repozitárov
+treba dodatočne overiť.
+
+\begin{table}[ht]
+    \centering
+    \caption{Whitelist overených zdrojov pre zberača}
+    \label{tab:whitelist}
+    \small
+    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{8.6cm}@{}}
+        \toprule
+        \textbf{Zdroj} & \textbf{Doména} & \textbf{Účel} \\
+        \midrule
+        Hugging Face & \texttt{huggingface.co} & model cards, technické
+            parametre, konfigurácie a~informácie o~modeloch \\
+        GitHub & \texttt{github.com} & oficiálne repozitáre, zdrojový kód
+            a~technická dokumentácia \\
+        arXiv & \texttt{arxiv.org} & vedecké publikácie, výskumné články
+            a~výsledky testovania modelov \\
+        NIST & \texttt{nist.gov} & bezpečnosť AI, hodnotenie rizík
+            a~odporúčania pre dôveryhodné AI systémy \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \paragraph{Skill.} Skill je opis jednej schopnosti agenta, ktorý tvoria
 tri časti: inštrukcia pre jazykový model (prompt), zoznam povolených
@@ -72,6 +89,13 @@ komponenty, ktoré volajú jazykový model. Úložisko dôkazov je databáza,
 testované modely a~katalóg kritérií sú dáta (artefakty). Audit sa zatiaľ
 spúšťa z~príkazového riadka (CLI). Prerušovanou čiarou je vyznačená
 experimentálna časť s~generátorom skillov.
+
+\begin{figure}[tp]
+\centering
+\includestandalone[width=\textwidth]{uml/komponenty}
+\caption{UML diagram komponentov systému (šípky znázorňujú tok dát)}
+\label{fig:komponenty}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Orchestrátor a~agenti}

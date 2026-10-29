@@ -1,4 +1,301 @@
 \section{Analýza problematiky}
 \label{sec:analyza}
 
-Kapitola bude doplnená v~priebehu riešenia projektu.
+Kapitola opisuje východiská problému, požiadavky a~taxonómie, z~ktorých
+hodnotenie vychádza, existujúce riešenia podobné výslednému systému
+a~nástroje na hodnotenie a~testovanie modelov. Pri každom riešení uvádzame,
+ktorú časť navrhovanej architektúry (kapitola~\ref{sec:architektura}) môže
+podporiť. Na konci je vymedzený konkrétny problém, ktorý projekt rieši.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Východiská problému}
+\label{sec:vychodiska}
+
+Základným formátom dokumentácie AI modelu je \emph{model card}~\cite{mitchell2019}.
+Hugging Face tento formát prevzala ako štandard a~dopĺňa ho
+o~štruktúrované metadáta (licencia, jazyk, dátové množiny, základný
+model)~\cite{hf-model-cards}. Formát však neznamená obsah. Analýza 32~000
+model cards na Hugging Face ukázala, že sekcia o~trénovaní je vyplnená
+v~74~\% kariet, sekcia o~obmedzeniach v~17~\% a~sekcia o~evaluácii iba
+v~15~\%~\cite{liang2024}. Index transparentnosti FMTI zaznamenal medzi
+rokmi 2024 a~2025 pokles priemerného skóre vývojárov z~58 na 40
+bodov~\cite{wan2025}.
+
+Hodnotiteľ preto musí informácie skladať z~viacerých zdrojov (model card,
+technická správa, článok, repozitár, samotné súbory modelu), ktoré majú
+rôznu štruktúru a~úroveň detailu a~niekedy si protirečia. Ručné spracovanie
+je prácne, výsledok závisí od skúseností hodnotiteľa a~zo záverov často nie
+je zrejmé, z~akého dôkazu vychádzajú. Ďalším obmedzením je prostredie:
+systém má byť použiteľný aj vo firme, kde dokumentácia a~testované modely
+nesmú opustiť vlastnú infraštruktúru, a~preto nemôže používať externé API
+ani voľný prístup na internet.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Požiadavky a~taxonómie}
+\label{sec:standardy}
+
+Na čo sa pri hodnotení pozerať, netreba vymýšľať. Existujú verejné rámce,
+z~ktorých sa zostaví katalóg kritérií (obrázok~\ref{fig:komponenty}):
+
+\begin{itemize}
+    \item \textbf{EU AI Act}~\cite{euaiact2024}: príloha XI opisuje povinnú
+    dokumentáciu modelov AI na všeobecné účely (opis a~prijateľné použitie,
+    architektúra, licencia, trénovanie a~dáta, výpočtové zdroje, pri
+    modeloch so systémovým rizikom aj evaluácia a~adversariálne testovanie).
+    Je záväzný v~EÚ, preto je hlavným zdrojom požiadaviek.
+    \item \textbf{NIST AI RMF}~\cite{nist2023airmf,nist-playbook}: dobrovoľný
+    rámec riadenia rizík s~funkciami Govern, Map, Measure a~Manage;
+    z~dokumentácie modelu sa dajú overovať najmä Map a~Measure.
+    \item \textbf{ISO/IEC 42001}~\cite{iso42001}: systém manažérstva AI
+    v~organizácii; väčšina jeho kontrol sa z~dokumentácie modelu overiť nedá.
+    \item \textbf{FMTI}~\cite{wan2025}: 100 indikátorov transparentnosti
+    vývojárov základných modelov; slúži ako overený zoznam polí profilu.
+    \item \textbf{OWASP Top 10 for LLM Applications}~\cite{owasp-llm2025}
+    a~\textbf{MITRE ATLAS}~\cite{mitre-atlas}: taxonómie hrozieb pre
+    jazykové modely a~AI systémy, ATLAS aj v~strojovo čitateľnej podobe.
+    \item \textbf{Threat modeling ML systémov}: otázky a~kategórie hrozieb od
+    Microsoftu~\cite{microsoft-aiml-tm}, STRIDE pre ML~\cite{mauri2022}
+    a~taxonómia rizík jazykových modelov~\cite{weidinger2022}.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Existujúce riešenia podobné cieľu projektu}
+\label{sec:podobne}
+
+Hľadali sme riešenia, ktoré robia to isté alebo časť toho, čo má robiť
+výsledný systém: zbierať informácie o~AI modeli, vytvárať jeho profil
+alebo model card, identifikovať riziká a~kontrolovať požiadavky.
+
+\paragraph{OWASP AIBOM Generator.} Nástroj projektu OWASP GenAI
+Security~\cite{aibom-generator} dostane identifikátor modelu na Hugging
+Face, z~model card, konfigurácie a~súborov repozitára extrahuje metadáta
+a~vytvorí opis modelu vo formáte CycloneDX~\cite{cyclonedx-mlbom}. Zároveň
+vypočíta skóre úplnosti a~navrhne, čo doplniť. \emph{Využitie:} extrakcia
+metadát zo súborov modelu, štandardný formát exportu profilu, inšpirácia
+pre rozpoznanie chýbajúcich údajov.
+
+\paragraph{CardGen a~CardBench.} Liu a~kol.~\cite{liu2024} generujú model
+cards dvojkrokovým vyhľadávaním v~článku a~README repozitára; pre každú
+sekciu karty kladú otázky z~pohľadu určitej role (napríklad etika pre
+riziká). Kód aj dátová množina CardBench (4~800 model cards) sú
+verejné~\cite{cardgen-code}. \emph{Využitie:} postup extrakcie
+s~vyhľadávaním úryvkov pre extraktora profilu, testovacie dáta.
+
+\paragraph{AdaQE-CG.} Systém~\cite{zhang2026adaqe} pri generovaní kariet
+iteratívne spresňuje dopyty, kým nenájde chýbajúce informácie, a~zvyšné
+medzery dopĺňa z~podobných kariet. Prináša aj anotovanú dátovú množinu
+MetaGAI-Bench a~hodnotenie kvality pomocou jazykového modelu ako sudcu.
+\emph{Využitie:} cyklus dopĺňania chýbajúcich údajov v~priebehu auditu
+(obrázok~\ref{fig:pipeline}), vyhodnotenie.
+
+\paragraph{MCTidy a~MCGenie.} Toma a~kol.~\cite{toma2026} štandardizujú
+existujúce model cards do jednotnej šablóny a~generujú karty z~repozitára
+a~článkov. Kód nie je zverejnený. \emph{Využitie:} metriky vyhodnotenia
+(zachovanie informácie, halucinácie, stabilita).
+
+\paragraph{RiskRAG.} Systém~\cite{rao2025} vyhľadáva v~sekciách rizík
+podobných modelov a~v~databáze reálnych incidentov a~vytvorí pre nový model
+prioritizovaný zoznam rizík s~mitigáciami. Kód nie je verejný.
+\emph{Využitie:} návrh analytika rizík.
+
+\paragraph{COMPL-AI.} Rámec~\cite{guldimann2024complai} prekladá princípy
+EU AI Act na merateľné technické požiadavky a~ku každej priraďuje
+benchmarky jazykových modelov. \emph{Využitie:} hotové mapovanie
+požiadaviek AI Act na technické kritériá pre katalóg kritérií
+a~hodnotiteľa kritérií.
+
+\paragraph{Model Openness Framework.} Rámec~\cite{white2024mof} definuje,
+ktoré komponenty modelu (kód, dáta, dokumentácia) a~pod akou licenciou
+musia byť zverejnené, a~model zaradí do jednej z~troch tried otvorenosti.
+\emph{Využitie:} kontrolný zoznam komponentov a~licencií pre profil.
+
+\paragraph{MIT AI Risk Repository.} Databáza viac ako 1~700 rizík AI
+z~65 rámcov, usporiadaných v~taxonómiách podľa príčiny
+a~oblasti~\cite{mit-airisk}. \emph{Využitie:} báza rizík pre analytika
+rizík spolu s~OWASP a~MITRE ATLAS.
+
+\paragraph{Komerčné platformy.} Credo AI~\cite{credoai}, Holistic
+AI~\cite{holisticai-platform} a~IBM watsonx.governance~\cite{watsonx-governance}
+vedú register AI systémov, mapujú ich na regulačné rámce a~zbierajú
+dôkazy. Predpokladajú však, že údaje o~modeli zadá jeho vlastník; cudziu
+dokumentáciu automaticky nečítajú a~bežia ako cloudová služba. Slúžia ako
+referencia, čo má výsledný report obsahovať.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Nástroje na hodnotenie a~testovanie modelov}
+\label{sec:nastroje}
+
+Okrem riešení vyššie existujú otvorené nástroje, ktoré pokrývajú
+jednotlivé kroky hodnotenia. Tabuľka~\ref{tab:nastroje} uvádza hlavné
+z~nich a~miesto, kde ich môže systém použiť. Všetky sa dajú prevádzkovať
+lokálne; pre úplne offline režim treba vopred pripraviť modely, dátové
+sady a~závislosti a~pri konkrétnych testoch vylúčiť volania externých API.
+
+\begin{table}[ht]
+    \centering
+    \caption{Nástroje na hodnotenie a~testovanie modelov}
+    \label{tab:nastroje}
+    \small
+    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{6.1cm}>{\raggedright\arraybackslash}p{5.4cm}@{}}
+        \toprule
+        \textbf{Nástroj} & \textbf{Účel} & \textbf{Využitie v~systéme} \\
+        \midrule
+        Docling~\cite{docling} & extrakcia textu a~štruktúry z~PDF
+            dokumentácie a~model cards & príprava úryvkov pre extraktora
+            profilu \\
+        ModelScan~\cite{modelscan} & bezpečnostná kontrola podporovaných
+            formátov súborov modelu & analytik artefaktov \\
+        COMPL-AI~\cite{guldimann2024complai} & technické hodnotenia
+            súvisiace s~vybranými požiadavkami EU AI Act & katalóg
+            kritérií, hodnotiteľ kritérií \\
+        Inspect AI~\cite{inspect} & testovanie modelov, testovacie otázky,
+            metriky a~izolované vykonávanie testov & rozšírenie: aktívne
+            testovanie \\
+        garak~\cite{garak} & automatizované bezpečnostné testovanie
+            a~vyhľadávanie slabých miest jazykových modelov & rozšírenie:
+            aktívne testovanie \\
+        \midrule
+        PyRIT~\cite{pyrit} & pokročilé testovacie scenáre a~analýza rizík
+            & rozšírenie: aktívne testovanie \\
+        Giskard~\cite{giskard} & hodnotenie kvality, spoľahlivosti
+            a~bezpečnosti AI & rozšírenie: aktívne testovanie \\
+        OpenComplAI & kontrola dokumentácie a~dôkazov o~plnení vybraných
+            požiadaviek & inšpirácia pre hodnotiteľa kritérií \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Nástroje sa delia na dve skupiny. Docling, ModelScan a~COMPL-AI
+pracujú s~dokumentáciou a~súbormi modelu bez jeho spustenia, preto
+zapadajú do prvej fázy projektu. Súbory vo formáte pickle môžu pri
+načítaní spustiť ľubovoľný kód~\cite{hf-pickle}, preto ich analytik
+artefaktov kontroluje izolovane; bezpečnejším formátom váh je
+safetensors~\cite{safetensors}. Inspect AI, garak, PyRIT a~Giskard
+naopak testujú správanie modelu (prompt injection, jailbreak, únik dát),
+teda vyžadujú, aby bol testovaný model spustený. Do architektúry by sa
+doplnili ako ďalší dynamický agent, ktorý testovaný model spustí
+v~izolovanom kontajneri; v~prvej fáze sú mimo rozsahu.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Riešenia s~orchestráciou agentov}
+\label{sec:orchestracia-sota}
+
+Jadrom navrhovaného systému je orchestrátor, ktorý rozdeľuje audit na
+podúlohy a~prideľuje ich menším agentom (kapitola~\ref{sec:agenti}).
+Tento vzor (orchestrator\,--\,worker) už existuje v~nasledujúcich
+riešeniach.
+
+\paragraph{Multiagentový výskumný systém Anthropic.} Hlavný agent
+naplánuje postup, uloží plán do pamäte a~paralelne spustí subagentov
+s~podrobným zadaním. Na konci samostatný agent priradí každé tvrdenie
+k~zdroju~\cite{anthropic-multiagent}. \emph{Využitie:} celkový vzor
+orchestrátora a~priradenie tvrdení k~dôkazom, ktoré zodpovedá princípu
+\uv{žiadne zistenie bez dôkazu}.
+
+\paragraph{Magentic-One.} Orchestrátor od Microsoftu vedie zoznam úloh
+a~zoznam postupu, deleguje prácu na špecializovaných agentov a~pri
+zaseknutí plán upraví~\cite{fourney2024magentic}. \emph{Využitie:}
+plánovanie a~preplánovanie v~cykle orchestrátora.
+
+\paragraph{AutoAgents.} Rámec~\cite{chen2024autoagents} na základe úlohy
+automaticky vygeneruje role agentov a~plán; agent pozorovateľ kontroluje
+plán aj výstupy a~navrhuje opravy. \emph{Využitie:} predchodca
+experimentu s~generátorom skillov a~kontroly kritikom.
+
+\paragraph{smolagents.} Knižnica Hugging Face~\cite{smolagents} pre agentov
+v~cykle ReAct, v~ktorej riadiaci agent volá ďalších agentov ako nástroje.
+Podporuje lokálne modely cez rozhranie kompatibilné s~OpenAI API, teda aj
+\texttt{llama-server}~\cite{llamacpp}. \emph{Využitie:} kandidát na
+implementačný základ orchestrátora a~agentov.
+
+\paragraph{Open Deep Research.} Referenčná implementácia LangChain so
+supervízorom a~paralelnými výskumnými agentmi, ktorých výstupy sa pred
+spojením skracujú~\cite{open-deep-research}. Repozitár je archivovaný.
+\emph{Využitie:} ukážkový kód vzoru supervízor\,--\,subagent.
+
+Uvedené systémy väčšinou počítajú s~veľkými modelmi dostupnými cez API.
+Náš návrh sa od nich líši tým, že beží iba s~lokálnymi modelmi, agenti
+používajú menšie modely s~malým kontextom a~každé tvrdenie overuje kritik.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Čo z~existujúcich riešení využijeme}
+\label{sec:vyuzitie}
+
+Obrázok~\ref{fig:vyuzitie} priraďuje existujúce riešenia a~nástroje
+k~častiam navrhovaného systému. Žiadne z~nájdených riešení nespája všetky
+časti naraz: zber z~lokálnych podkladov, profil s~dôkazmi a~mierou istoty,
+mapovanie na požiadavky a~hrozby, doplňujúce otázky a~lokálnu prevádzku.
+Pre každú časť však existuje overený prístup, na ktorom môže projekt
+stavať.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    font=\footnotesize,
+    cast/.style={draw, very thick, rounded corners, minimum width=4.2cm, minimum height=0.85cm, align=center, fill=gray!15},
+    zdroj/.style={draw, rounded corners, text width=8.6cm, minimum height=0.85cm, align=left, fill=white},
+    sip/.style={{Stealth[length=2mm]}-, thick, gray},
+    node distance=0.3cm
+]
+    \node[cast] (c1) {Zberač a~príprava podkladov};
+    \node[cast, below=of c1] (c2) {Analytik artefaktov};
+    \node[cast, below=of c2] (c3) {Extraktor profilu};
+    \node[cast, below=of c3] (c4) {Tvorca otázok};
+    \node[cast, below=of c4] (c5) {Analytik rizík};
+    \node[cast, below=of c5] (c6) {Hodnotiteľ kritérií};
+    \node[cast, below=of c6] (c7) {Orchestrátor a~kritik};
+    \node[cast, below=of c7] (c8) {Vyhodnotenie systému};
+
+    \node[zdroj, right=0.8cm of c1] (z1) {Docling, OWASP AIBOM Generator, whitelist overených stránok};
+    \node[zdroj, right=0.8cm of c2] (z2) {ModelScan, safetensors};
+    \node[zdroj, right=0.8cm of c3] (z3) {CardGen, Model Openness Framework, indikátory FMTI, CycloneDX};
+    \node[zdroj, right=0.8cm of c4] (z4) {AdaQE-CG (iteratívne dopyty), skóre úplnosti AIBOM};
+    \node[zdroj, right=0.8cm of c5] (z5) {RiskRAG, MIT AI Risk Repository, OWASP, MITRE ATLAS};
+    \node[zdroj, right=0.8cm of c6] (z6) {COMPL-AI, NIST AI RMF, OpenComplAI};
+    \node[zdroj, right=0.8cm of c7] (z7) {Anthropic multi-agent, Magentic-One, AutoAgents, smolagents};
+    \node[zdroj, right=0.8cm of c8] (z8) {CardBench, MetaGAI-Bench, metriky MCGenie, skóre FMTI};
+
+    \foreach \i in {1,...,8} \draw[sip] (c\i) -- (z\i);
+\end{tikzpicture}
+\caption{Existujúce riešenia a~nástroje, z~ktorých môžu časti systému vychádzať}
+\label{fig:vyuzitie}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Vymedzenie riešeného problému}
+\label{sec:problem}
+
+\paragraph{Riešený problém.} Pre zvolený otvorený AI model (primárne
+jazykový model) automaticky a~lokálne zostaviť bezpečnostný a~governance
+profil z~jeho súborov a~dokumentácie, ku každému údaju uviesť dôkaz
+a~mieru istoty, označiť chýbajúce a~rozporné informácie, identifikovať
+relevantné riziká a~hrozby a~vyhodnotiť splnenie vybraných požiadaviek.
+
+\paragraph{Vstup.} Nahraté súbory testovaného modelu (váhy, konfigurácia,
+model card) a~ďalšie dokumenty, napríklad vedecký článok alebo technická
+správa. Voliteľne sa podklady doplnia z~overených stránok
+(tabuľka~\ref{tab:whitelist}) a~z~odpovedí používateľa na doplňujúce
+otázky.
+
+\paragraph{Výstup.}
+\begin{itemize}
+    \item profil modelu podľa jednotného informačného modelu
+    (obrázok~\ref{fig:profil}), každé tvrdenie s~dôkazom a~mierou istoty,
+    \item zoznam rizík a~hrozieb mapovaných na OWASP Top 10 for LLM
+    a~MITRE ATLAS,
+    \item vyhodnotenie katalógu kritérií (splnené, čiastočne splnené,
+    nesplnené, nedostatok dôkazov),
+    \item chýbajúce a~rozporné údaje a~otvorené doplňujúce otázky,
+    \item doplnená model card.
+\end{itemize}
+
+\paragraph{V~rozsahu projektu.} Otvorené modely, ktorých súbory
+a~dokumentácia sú k~dispozícii, statická analýza súborov modelu bez jeho
+spustenia, lokálna prevádzka všetkých komponentov vrátane jazykových
+modelov, prístup na internet iba na overené stránky.
+
+\paragraph{Mimo rozsahu (v~prvej fáze).} Uzavreté komerčné modely dostupné
+iba cez API, aktívne testovanie správania modelu (nástroje Inspect AI,
+garak, PyRIT, Giskard), certifikácia súladu s~ISO/IEC 42001 na úrovni
+organizácie. Aktívne testovanie je kandidátom na rozšírenie v~ďalšej fáze
+projektu.
