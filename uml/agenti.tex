@@ -57,11 +57,13 @@
         {\textbf{Tvorca otázok}\nodepart{second}\vs polia bez zdroja\nodepart{third}\ai sformuluje otázky\nodepart{fourth}\vy otázky používateľovi};
     \node[karta, ai, dashed, rectangle split part fill={gray!8, white, white, gray!6}] (d4) at (12.9,-6.95)
         {\textbf{Nový skill} \textit{\scriptsize\guillemotleft experiment\guillemotright}\nodepart{second}\vs podúloha + skill\nodepart{third}\ai rieši podúlohu\nodepart{fourth}\vy výsledok kritikovi};
+    \node[karta, bezai, rectangle split part fill={gray!8, white, white, gray!6}] (d5) at (0,-9.75)
+        {\textbf{Tester}\nodepart{second}\vs súbory modelu, atribúty\nodepart{third}\ro spustí model, testy\nodepart{fourth}\vy výsledky do úložiska};
 
     %%% skupiny
     \begin{scope}[on background layer]
         \node[skupina, fill=gray!5, fit=(s1)(s4), inner ysep=9pt, yshift=5pt] (gst) {};
-        \node[skupina, fill=white, fit=(d1)(d4), inner ysep=9pt, yshift=5pt] (gdyn) {};
+        \node[skupina, fill=white, fit=(d1)(d4)(d5), inner ysep=9pt, yshift=5pt] (gdyn) {};
     \end{scope}
     \node[nadpis] at (gst.north west) {Statickí agenti \textmd{(bežia stále)}};
     \node[nadpis] at (gdyn.north west) {Dynamickí agenti \textmd{(spúšťajú sa podľa potreby)}};

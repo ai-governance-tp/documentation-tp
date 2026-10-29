@@ -149,16 +149,16 @@ sady a~závislosti a~pri konkrétnych testoch vylúčiť volania externých API.
             súvisiace s~vybranými požiadavkami EU AI Act & katalóg
             kritérií, hodnotiteľ kritérií \\
         Inspect AI~\cite{inspect} & testovanie modelov, testovacie otázky,
-            metriky a~izolované vykonávanie testov & rozšírenie: aktívne
-            testovanie \\
+            metriky a~izolované vykonávanie testov & tester (dynamické
+            testy) \\
         garak~\cite{garak} & automatizované bezpečnostné testovanie
-            a~vyhľadávanie slabých miest jazykových modelov & rozšírenie:
-            aktívne testovanie \\
+            a~vyhľadávanie slabých miest jazykových modelov & tester
+            (dynamické testy) \\
         \midrule
         PyRIT~\cite{pyrit} & pokročilé testovacie scenáre a~analýza rizík
-            & rozšírenie: aktívne testovanie \\
+            & tester (dynamické testy) \\
         Giskard~\cite{giskard} & hodnotenie kvality, spoľahlivosti
-            a~bezpečnosti AI & rozšírenie: aktívne testovanie \\
+            a~bezpečnosti AI & tester (dynamické testy) \\
         OpenComplAI & kontrola dokumentácie a~dôkazov o~plnení vybraných
             požiadaviek & inšpirácia pre hodnotiteľa kritérií \\
         \bottomrule
@@ -172,9 +172,10 @@ načítaní spustiť ľubovoľný kód~\cite{hf-pickle}, preto ich analytik
 artefaktov kontroluje izolovane; bezpečnejším formátom váh je
 safetensors~\cite{safetensors}. Inspect AI, garak, PyRIT a~Giskard
 naopak testujú správanie modelu (prompt injection, jailbreak, únik dát),
-teda vyžadujú, aby bol testovaný model spustený. Do architektúry by sa
-doplnili ako ďalší dynamický agent, ktorý testovaný model spustí
-v~izolovanom kontajneri; v~prvej fáze sú mimo rozsahu.
+teda vyžadujú, aby bol testovaný model spustený. V~systéme ich používa
+dynamický agent tester, ktorý testovaný model spustí v~izolovanom
+kontajneri a~overí atribúty, pri ktorých nestačí deklarácia výrobcu
+(kapitola~\ref{sec:specifikacia-atributov}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Riešenia s~orchestráciou agentov}
@@ -244,7 +245,8 @@ stavať.
     \node[cast, below=of c4] (c5) {Analytik rizík};
     \node[cast, below=of c5] (c6) {Hodnotiteľ kritérií};
     \node[cast, below=of c6] (c7) {Orchestrátor a~kritik};
-    \node[cast, below=of c7] (c8) {Vyhodnotenie systému};
+    \node[cast, below=of c7] (c8) {Tester};
+    \node[cast, below=of c8] (c9) {Vyhodnotenie systému};
 
     \node[zdroj, right=0.8cm of c1] (z1) {Docling, OWASP AIBOM Generator, whitelist overených stránok};
     \node[zdroj, right=0.8cm of c2] (z2) {ModelScan, safetensors};
@@ -253,9 +255,10 @@ stavať.
     \node[zdroj, right=0.8cm of c5] (z5) {RiskRAG, MIT AI Risk Repository, OWASP, MITRE ATLAS};
     \node[zdroj, right=0.8cm of c6] (z6) {COMPL-AI, NIST AI RMF, OpenComplAI};
     \node[zdroj, right=0.8cm of c7] (z7) {Anthropic multi-agent, Magentic-One, AutoAgents, smolagents};
-    \node[zdroj, right=0.8cm of c8] (z8) {CardBench, MetaGAI-Bench, metriky MCGenie, skóre FMTI};
+    \node[zdroj, right=0.8cm of c8] (z8) {Inspect AI, garak, PyRIT, Giskard};
+    \node[zdroj, right=0.8cm of c9] (z9) {CardBench, MetaGAI-Bench, metriky MCGenie, skóre FMTI};
 
-    \foreach \i in {1,...,8} \draw[sip] (c\i) -- (z\i);
+    \foreach \i in {1,...,9} \draw[sip] (c\i) -- (z\i);
 \end{tikzpicture}
 \caption{Existujúce riešenia a~nástroje, z~ktorých môžu časti systému vychádzať}
 \label{fig:vyuzitie}
@@ -286,16 +289,16 @@ otázky.
     \item vyhodnotenie katalógu kritérií (splnené, čiastočne splnené,
     nesplnené, nedostatok dôkazov),
     \item chýbajúce a~rozporné údaje a~otvorené doplňujúce otázky,
+    \item odporúčania na zlepšenie modelu a~jeho dokumentácie (čo doplniť,
+    ktoré riziká zmierniť a~ako),
     \item doplnená model card.
 \end{itemize}
 
 \paragraph{V~rozsahu projektu.} Otvorené modely, ktorých súbory
-a~dokumentácia sú k~dispozícii, statická analýza súborov modelu bez jeho
-spustenia, lokálna prevádzka všetkých komponentov vrátane jazykových
-modelov, prístup na internet iba na overené stránky.
+a~dokumentácia sú k~dispozícii, statická analýza súborov modelu,
+dynamické testovanie testovaného modelu v~izolovanom kontajneri, lokálna
+prevádzka všetkých komponentov vrátane jazykových modelov, prístup na
+internet iba na overené stránky.
 
-\paragraph{Mimo rozsahu (v~prvej fáze).} Uzavreté komerčné modely dostupné
-iba cez API, aktívne testovanie správania modelu (nástroje Inspect AI,
-garak, PyRIT, Giskard), certifikácia súladu s~ISO/IEC 42001 na úrovni
-organizácie. Aktívne testovanie je kandidátom na rozšírenie v~ďalšej fáze
-projektu.
+\paragraph{Mimo rozsahu.} Uzavreté komerčné modely dostupné iba cez API,
+certifikácia súladu s~ISO/IEC 42001 na úrovni organizácie.

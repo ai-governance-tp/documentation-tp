@@ -73,7 +73,8 @@ analytika artefaktov, ktorý číta súbory testovaného modelu: súbory vo
 formáte pickle môžu pri načítaní spustiť ľubovoľný kód~\cite{hf-pickle},
 preto sa spracúvajú izolovane a~bez prístupu na internet (komunikuje iba
 s~databázou vo vnútornej sieti kontajnerov). Zberač ako jediný potrebuje
-internet, preto beží oddelene za proxy. Agenti, ktorí iba volajú
+internet, preto beží oddelene za proxy. Rovnako izolovane, bez prístupu
+na internet, beží tester, ktorý testovaný model spúšťa. Agenti, ktorí iba volajú
 jazykový model, sú v~kontajneroch kvôli jednotnému nasadeniu a~nezávislému
 spúšťaniu; ak sa to ukáže ako zbytočná réžia, môžu bežať ako procesy
 v~kontajneri orchestrátora.
@@ -108,6 +109,12 @@ kritikovi. Výstupy bez jazykového modelu, teda nálezy deterministických
 kontrol analytika artefaktov a~dokumenty stiahnuté zberačom, sa ukladajú
 priamo do úložiska; otázky tvorcu otázok idú cez orchestrátor
 používateľovi.
+
+Pre dynamické overenie atribútov (kapitola~\ref{sec:specifikacia-atributov})
+pribudne dynamický agent \emph{tester}. Spustí testovaný model
+v~izolovanom kontajneri a~vykoná na ňom testy nástrojmi ako garak, PyRIT
+alebo Inspect AI (tabuľka~\ref{tab:nastroje}); výsledky testov ukladá do
+úložiska ako dôkazy.
 
 \begin{figure}[ht]
 \centering
@@ -171,7 +178,9 @@ stavový diagram. Každé tvrdenie AI agenta prechádza kontrolou kritika;
 zamietnutý výstup opraví ten agent, ktorý ho vytvoril. Audit má limity:
 počet opráv jedného výstupu, počet iterácií a~čas čakania na odpoveď
 používateľa. Po ich vyčerpaní sa audit ukončí reportom, v~ktorom zostanú
-neoverené tvrdenia a~nezodpovedané otázky označené ako otvorené.
+neoverené tvrdenia a~nezodpovedané otázky označené ako otvorené. Report
+obsahuje aj odporúčania, ako zlepšiť model a~jeho dokumentáciu: ktoré
+údaje doplniť a~ktoré zistené riziká zmierniť.
 
 \begin{figure}[ht]
 \centering

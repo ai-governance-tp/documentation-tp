@@ -39,10 +39,11 @@
     \node[dyn] (d2) at (9.15,-5.75) {\st{container}\\Tvorca otázok};
     \node[dyn, dashed] (d3) at (6.85,-7.15) {\st{container}\\Nový skill};
     \node[dyn] (d4) at (9.15,-7.15) {\st{container}\\Zberač};
+    \node[dyn] (d5) at (8.0,-8.55) {\st{container}\\Tester\\\scriptsize\textit{bez internetu}};
 
     \begin{scope}[on background layer]
         \node[skupina, fill=gray!3, fit=(s1)(s4), inner ysep=9pt, yshift=4pt] (gst) {};
-        \node[skupina, fill=gray!3, fit=(d1)(d4), inner ysep=9pt, yshift=4pt, inner xsep=8pt] (gdyn) {};
+        \node[skupina, fill=gray!3, fit=(d1)(d4)(d5), inner ysep=9pt, yshift=4pt, inner xsep=8pt] (gdyn) {};
         \node[skupina, fill=gray!14, fit=(orch)(gst)(gdyn), inner sep=7pt, yshift=5pt] (app) {};
     \end{scope}
     \node[nadpis] at (gst.north west) {statickí: bežia stále};
@@ -55,7 +56,7 @@
     \node[kont, minimum width=3.1cm] (proxy) at (14.1,-7.15) {\st{container}\\Proxy s~whitelistom};
 
     %%% dáta testovaného modelu
-    \node[kont, minimum width=9.4cm, minimum height=0.9cm, fill=gray!12] (vol) at (5.4,-9.3)
+    \node[kont, minimum width=9.4cm, minimum height=0.9cm, fill=gray!12] (vol) at (5.4,-10.75)
         {\st{volume}\ \textbf{Testované modely}: nahraté súbory (váhy, konfigurácia, model card)};
 
     %%% kontajnerový runtime a hostiteľ
@@ -73,7 +74,7 @@
     %%% používateľ a vonkajší svet
     \node[kont, minimum width=3.6cm, fill=gray!18] (pc) at (4.0,1.3) {\st{device}\\\textbf{Počítač používateľa}\\CLI klient};
     \kocka{pc}{gray!30}
-    \node[kont, dashed, minimum width=3.1cm] (web) at (14.1,-11.6) {\st{externé, voliteľné}\\niekoľko overených stránok};
+    \node[kont, dashed, minimum width=3.1cm] (web) at (14.1,-12.9) {\st{externé, voliteľné}\\niekoľko overených stránok};
 
     %%% spojenia
     \draw[obe] (pc.south) -- node[popis, left, pos=0.17, align=right] {$\downarrow$ príkazy, odpovede\\$\uparrow$ otázky, report} (pc.south |- orch.north);
